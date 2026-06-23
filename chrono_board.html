@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChronoBoard</title>
+<style>
+  :root{
+    --bg:#f4f5f7;
+    --ink:#1a1a1a;
+    --sub:#8a8f98;
+    --blue:#2f6bff;
+    --line:#e7e8ec;
+    /* item colors */
+    --schedule:#fff3c4;     /* 일정 - 노랑 */
+    --schedule-edge:#f4d35e;
+    --memo:#cfe8ff;         /* 메모 - 블루 */
+    --memo-edge:#9cc7ff;
+    --work:#d8f5dd;         /* 작업공간 - 그린 */
+    --work-edge:#a6e0b1;
+    --file:#f3e3ff;         /* 파일 - 보라 */
+    --file-edge:#cda6e8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- Top Nav ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 32px;background:#fff;border-bottom:1px solid var(--line);
+    z-index:50;
+  }
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:21px;letter-spacing:-.6px}
+  .brand .logo{width:36px;height:36px;display:block;flex:none}
+  .brand .wm-chrono{color:#1a1a1a}
+  .brand .wm-board{color:var(--blue)}
+
+  /* ---------- Toolbar (board head) ---------- */
+  .toolbar{
+    display:flex;align-items:center;gap:14px;
+    padding:18px 32px;background:#fff;border-bottom:1px solid var(--line);
+    z-index:40;
+  }
+  .toolbar .hint{margin-left:auto;color:var(--sub);font-size:13px}
+  .add-btn{
+    display:flex;align-items:center;gap:9px;
+    border:none;cursor:pointer;font-size:14.5px;font-weight:600;
+    padding:11px 18px;border-radius:12px;color:#1a1a1a;
+    transition:transform .15s ease, box-shadow .15s ease;
+    box-shadow:0 2px 6px rgba(0,0,0,.06);
+  }
+  .add-btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,.12)}
+  .add-btn .dot{width:13px;height:13px;border-radius:4px}
+  .add-btn.schedule{background:var(--schedule)}
+  .add-btn.schedule .dot{background:var(--schedule-edge)}
+  .add-btn.memo{background:var(--memo)}
+  .add-btn.memo .dot{background:var(--memo-edge)}
+  .add-btn.work{background:var(--work)}
+  .add-btn.work .dot{background:var(--work-edge)}
+  .add-btn.file{background:var(--file)}
+  .add-btn.file .dot{background:var(--file-edge)}
+
+  /* ---------- Search ---------- */
+  .search-box{
+    display:flex;align-items:center;gap:8px;background:#f1f2f5;
+    border:1.5px solid transparent;border-radius:11px;padding:8px 12px;width:230px;
+    transition:border-color .15s, background .15s;
+  }
+  .search-box:focus-within{background:#fff;border-color:var(--blue)}
+  .search-box svg{flex:none;opacity:.5}
+  .search-box input{border:none;background:transparent;outline:none;font-size:14px;font-family:inherit;color:var(--ink);width:100%}
+  .search-box .clear{border:none;background:none;cursor:pointer;color:var(--sub);font-size:15px;display:none;line-height:1}
+  .search-box.has-text .clear{display:block}
+  .search-count{font-size:12px;color:var(--sub);font-weight:600;white-space:nowrap}
+  .storage-status{font-size:12px;color:var(--sub);font-weight:600;white-space:nowrap;margin-left:8px}
+  .card.search-hidden{display:none!important}
+  .card.search-hit{box-shadow:0 0 0 3px var(--blue), 0 14px 30px rgba(47,107,255,.28)!important}
+
+  /* ---------- Board ---------- */
+  .board{
+    position:relative;flex:1;overflow:hidden;
+    background-color:#f4f5f7;
+    background-image:radial-gradient(rgba(0,0,0,.05) 1.1px, transparent 1.1px);
+    background-size:22px 22px;
+    padding-right:330px;
+  }
+
+  /* ---------- Important frame (right side) ---------- */
+  .frame{
+    position:absolute;top:200px;right:24px;bottom:24px;width:288px;z-index:20;
+    border-radius:14px;
+    background:
+      linear-gradient(135deg,#8a6a3a,#c9a86a 18%,#a07d44 50%,#caa96b 82%,#7d5f33);
+    padding:13px;
+    box-shadow:0 16px 40px rgba(0,0,0,.22), inset 0 2px 5px rgba(255,255,255,.35), inset 0 -3px 7px rgba(0,0,0,.35);
+    display:flex;flex-direction:column;
+  }
+  .frame-inner{
+    flex:1;position:relative;border-radius:7px;overflow:hidden;
+    background:#efe7d6;
+    background-image:radial-gradient(rgba(120,90,40,.10) 1.1px, transparent 1.1px);
+    background-size:18px 18px;
+    box-shadow:inset 0 3px 10px rgba(0,0,0,.22), inset 0 0 0 1px rgba(120,90,40,.25);
+    padding:8px;overflow-y:auto;
+  }
+  .frame-title{
+    position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+    background:#fff;border:1px solid rgba(120,90,40,.4);
+    font-size:12px;font-weight:800;letter-spacing:1px;color:#7a5a2c;
+    padding:4px 16px;border-radius:20px;white-space:nowrap;
+    box-shadow:0 3px 8px rgba(0,0,0,.15);z-index:2;
+  }
+  .frame.drop-hover .frame-inner{box-shadow:inset 0 0 0 3px var(--blue);background:#e8f0ff}
+  .frame-empty{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:6px;color:#a8966f;font-size:12.5px;text-align:center;padding:20px;pointer-events:none;
+  }
+  .frame-empty .ic{font-size:26px;opacity:.5}
+  /* pinned cards inside the frame: compact, stacked vertically */
+  .frame-inner .card{
+    position:relative!important;left:auto!important;top:auto!important;
+    width:auto!important;min-height:0!important;height:auto!important;
+    transform:none!important;margin:14px 4px 10px;
+    box-shadow:0 4px 12px rgba(0,0,0,.16);cursor:default;
+  }
+  .frame-inner .card .resize,.frame-inner .card .expand{display:none!important}
+  .frame-inner .card .pin{display:block}
+
+  .empty{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:8px;color:#b7bcc4;pointer-events:none;text-align:center;
+  }
+  .empty h2{font-size:26px;font-weight:600;letter-spacing:-.5px;color:#aeb3bb}
+  .empty p{font-size:14px}
+
+  /* ---------- Card ---------- */
+  .card{
+    position:absolute;width:240px;min-height:150px;
+    border-radius:6px;padding:22px 20px 18px;
+    box-shadow:0 10px 26px rgba(0,0,0,.16);
+    cursor:grab;user-select:none;
+    transition:box-shadow .2s ease;
+    display:flex;flex-direction:column;
+  }
+  .card:active{cursor:grabbing}
+  .card.dragging{box-shadow:0 24px 50px rgba(0,0,0,.28);z-index:999!important}
+  .card.schedule{background:var(--schedule);transform:rotate(-2deg)}
+  .card.memo{background:var(--memo);transform:rotate(1.5deg)}
+  .card.work{background:var(--work);transform:rotate(-1deg);width:340px;min-height:230px}
+
+  /* file card – shaped like a file/folder */
+  .card.file{
+    background:var(--file);transform:rotate(1deg);width:230px;min-height:170px;
+    padding-top:30px;
+    clip-path:polygon(0 14px, 46% 14px, 54% 0, 100% 0, 100% 100%, 0 100%);
+  }
+  .card.file .pin{display:none}
+  .file-attach{
+    margin-top:10px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.55);
+    display:flex;align-items:center;gap:10px;padding:10px;font-size:12.5px;
+  }
+  .file-attach img{width:54px;height:54px;object-fit:cover;border-radius:7px;flex:none}
+  .file-attach .fic{
+    width:42px;height:50px;flex:none;border-radius:5px;background:#fff;
+    display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--blue);
+    box-shadow:0 2px 5px rgba(0,0,0,.12);position:relative;
+  }
+  .file-attach .fmeta{overflow:hidden}
+  .file-attach .fname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .file-attach .fsize{color:var(--sub);font-size:11px;margin-top:2px}
+  .file-attach .preview{font-size:11px;color:var(--blue);font-weight:700;text-decoration:none;margin-top:4px;display:inline-block;cursor:pointer}
+  .file-attach .factions{display:flex;gap:10px;margin-top:5px}
+  .file-attach .factions .preview{margin-top:0;padding:2px 8px;border-radius:6px;background:rgba(47,107,255,.12)}
+  .file-attach .factions .preview:hover{background:rgba(47,107,255,.22)}
+  .file-attach img{cursor:zoom-in}
+
+  /* ---------- Lightbox ---------- */
+  .lightbox{
+    position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;
+    background:rgba(15,17,22,.82);backdrop-filter:blur(6px);padding:40px;
+  }
+  .lightbox.show{display:flex}
+  .lightbox img{max-width:92vw;max-height:84vh;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.5);background:#fff}
+  .lightbox .lb-bar{position:absolute;top:22px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:14px;color:#fff}
+  .lightbox .lb-name{font-size:14px;font-weight:600;max-width:50vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lightbox .lb-bar a,.lightbox .lb-close{
+    border:none;cursor:pointer;font-size:13px;font-weight:700;color:#fff;text-decoration:none;
+    background:rgba(255,255,255,.16);padding:8px 14px;border-radius:9px;transition:background .15s;
+  }
+  .lightbox .lb-bar a:hover,.lightbox .lb-close:hover{background:rgba(255,255,255,.3)}
+  .lightbox .lb-close{position:absolute;top:22px;right:24px}
+
+  /* expand button on work card */
+  .card .expand{
+    position:absolute;top:8px;right:92px;width:22px;height:22px;border:none;border-radius:6px;
+    cursor:pointer;background:rgba(255,255,255,.7);display:none;place-items:center;color:#444;font-size:12px;
+  }
+  .card.work .expand{display:grid}
+  .card:hover .expand{background:#fff}
+
+  /* ---------- Fullscreen workspace ---------- */
+  .ws-overlay{
+    position:fixed;inset:0;z-index:1500;display:none;align-items:center;justify-content:center;
+    background:rgba(20,22,28,.5);backdrop-filter:blur(4px);
+  }
+  .ws-overlay.show{display:flex}
+  .ws-panel{
+    width:90vw;height:90vh;background:var(--work);border-radius:22px;
+    box-shadow:0 40px 90px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;
+    animation:pop .25s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .ws-head{
+    display:flex;align-items:center;gap:14px;padding:16px 22px;
+    background:rgba(255,255,255,.5);border-bottom:1px solid rgba(0,0,0,.06);
+  }
+  .ws-head .wtag{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;opacity:.5}
+  .ws-head input.wtitle{
+    border:none;background:transparent;font-size:20px;font-weight:800;letter-spacing:-.4px;
+    color:#1a1a1a;flex:1;font-family:inherit;
+  }
+  .ws-head input.wtitle:focus{outline:none}
+  .ws-tools{display:flex;gap:8px}
+  .ws-tools button{
+    border:1.5px solid rgba(0,0,0,.12);background:rgba(255,255,255,.7);cursor:pointer;
+    font-size:13px;font-weight:700;padding:8px 13px;border-radius:10px;color:#3a3f47;
+    display:flex;align-items:center;gap:6px;transition:all .15s;
+  }
+  .ws-tools button:hover{background:#fff;transform:translateY(-1px)}
+  .ws-tools .wsdot{width:11px;height:11px;border-radius:3px}
+  .ws-close{margin-left:6px;border:none;background:rgba(0,0,0,.06);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:16px;color:#444}
+  .ws-close:hover{background:rgba(0,0,0,.12)}
+  .ws-body{flex:1;display:flex;overflow:hidden}
+  .ws-text{
+    width:340px;flex:none;border-right:1px solid rgba(0,0,0,.07);
+    background:rgba(255,255,255,.4);padding:18px;
+  }
+  .ws-text textarea{
+    width:100%;height:100%;border:none;background:transparent;resize:none;
+    font-size:15px;line-height:1.7;font-family:inherit;color:#1a1a1a;
+  }
+  .ws-text textarea:focus{outline:none}
+  .ws-canvas{
+    flex:1;position:relative;overflow:hidden;
+    background-image:radial-gradient(rgba(0,0,0,.05) 1.1px, transparent 1.1px);
+    background-size:22px 22px;
+  }
+  .ws-canvas .empty-mini{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:#9aa39a;font-size:14px;pointer-events:none;
+  }
+
+  /* pin */
+  .pin{
+    position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+    width:22px;height:22px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ff7a7a, #d93636 70%);
+    box-shadow:0 4px 8px rgba(0,0,0,.3), inset -2px -2px 4px rgba(0,0,0,.25);
+    z-index:2;
+  }
+  .pin::after{
+    content:"";position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    width:2px;height:9px;background:rgba(0,0,0,.25);border-radius:2px;
+  }
+
+  .card .tag{
+    font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    opacity:.55;margin-bottom:8px;
+  }
+  .card .title{font-size:17px;font-weight:700;line-height:1.3;margin-bottom:6px;word-break:break-word;letter-spacing:-.3px}
+  .card .body{font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;flex:1}
+  .card.memo .body, .card.schedule .body{font-style:italic}
+  .card .meta{
+    font-size:12px;opacity:.6;margin-top:12px;display:flex;align-items:center;gap:6px;
+  }
+
+  /* card controls */
+  .card .ctrl{
+    position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transition:opacity .15s;
+  }
+  .card:hover .ctrl{opacity:1}
+  .card .ctrl button{
+    width:22px;height:22px;border:none;border-radius:6px;cursor:pointer;
+    background:rgba(255,255,255,.7);font-size:12px;line-height:1;color:#444;
+    display:grid;place-items:center;
+  }
+  .card .ctrl button:hover{background:#fff}
+  .card .ctrl button.copied{background:#16a34a;color:#fff}
+  .card .ctrl button.star-btn.on{background:#ffd24a;color:#7a5a00}
+  .frame-inner .card .ctrl{opacity:1}
+
+  /* resize handle (work only, but enabled for all) */
+  .resize{
+    position:absolute;right:3px;bottom:3px;width:18px;height:18px;cursor:nwse-resize;
+    opacity:.4;
+  }
+  .resize svg{display:block}
+  .card:hover .resize{opacity:.8}
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(20,22,28,.42);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;z-index:1000;
+  }
+  .overlay.show{display:flex}
+  .modal{
+    width:430px;max-width:92vw;background:#fff;border-radius:18px;
+    box-shadow:0 30px 70px rgba(0,0,0,.3);overflow:hidden;
+    animation:pop .22s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes pop{from{transform:scale(.92) translateY(10px);opacity:0}to{transform:none;opacity:1}}
+  .modal .head{padding:22px 26px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+  .modal .head .swatch{width:16px;height:16px;border-radius:5px}
+  .modal .head h3{font-size:18px;font-weight:700;letter-spacing:-.3px}
+  .modal .content{padding:22px 26px}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--sub);margin-bottom:7px;letter-spacing:.2px}
+  .field input,.field textarea{
+    width:100%;border:1.5px solid var(--line);border-radius:11px;
+    padding:11px 13px;font-size:14.5px;font-family:inherit;color:var(--ink);
+    transition:border-color .15s;resize:vertical;
+  }
+  .field input:focus,.field textarea:focus{outline:none;border-color:var(--blue)}
+  .field textarea{min-height:90px}
+  .modal .foot{padding:0 26px 24px;display:flex;gap:10px;justify-content:flex-end}
+  .btn{border:none;cursor:pointer;font-size:14px;font-weight:600;padding:11px 20px;border-radius:11px;transition:transform .12s,opacity .12s}
+  .btn:hover{transform:translateY(-1px)}
+  .btn.ghost{background:#f1f2f5;color:#555}
+  .btn.primary{background:var(--blue);color:#fff;box-shadow:0 6px 16px rgba(47,107,255,.35)}
+
+  /* ---------- Sort buttons ---------- */
+  .sort-group{display:flex;align-items:center;gap:8px;margin-left:14px;padding-left:14px;border-left:1px solid var(--line)}
+  .sort-group .lbl{font-size:12px;color:var(--sub);font-weight:600;letter-spacing:.2px}
+  .sort-btn{
+    border:1.5px solid var(--line);background:#fff;cursor:pointer;
+    font-size:13px;font-weight:600;color:#555;padding:8px 14px;border-radius:10px;
+    transition:all .15s;
+  }
+  .sort-btn:hover{border-color:var(--blue);color:var(--blue)}
+  .sort-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(47,107,255,.28)}
+
+  /* ---------- Clock widget ---------- */
+  .clock-widget{
+    position:absolute;top:24px;right:24px;z-index:30;
+    width:288px;background:rgba(255,255,255,.88);backdrop-filter:blur(8px);
+    border-radius:18px;padding:14px 16px 12px;
+    box-shadow:0 12px 32px rgba(0,0,0,.13);border:1px solid rgba(255,255,255,.7);
+    text-align:center;display:flex;align-items:center;justify-content:center;gap:16px;
+  }
+  .clock-widget .clock-info{text-align:left}
+  .clock-face{position:relative;width:106px;height:106px;margin:0 auto}
+  .clock-face svg{display:block}
+  .clock-digital{margin-top:10px;font-size:19px;font-weight:700;letter-spacing:.5px;color:#1a1a1a;font-variant-numeric:tabular-nums}
+  .clock-date{font-size:11.5px;color:var(--sub);font-weight:600;margin-top:2px}
+  .hand{transform-origin:53px 53px;transition:transform .15s cubic-bezier(.4,2.1,.6,1)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="ChronoBoard logo">
+      <!-- board card -->
+      <rect x="6" y="9" width="28" height="26" rx="6" fill="#1a1a1a"/>
+      <rect x="6" y="9" width="28" height="26" rx="6" fill="url(#g1)" fill-opacity="0.0"/>
+      <!-- clock face -->
+      <circle cx="20" cy="23" r="8.2" fill="#fff"/>
+      <!-- clock hands -->
+      <path d="M20 23 L20 18.2" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M20 23 L23.6 24.6" stroke="#2f6bff" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="20" cy="23" r="1.5" fill="#2f6bff"/>
+      <!-- pin head on top of card -->
+      <circle cx="20" cy="7" r="4.4" fill="#2f6bff"/>
+      <circle cx="18.6" cy="5.6" r="1.3" fill="#fff" fill-opacity="0.7"/>
+      <rect x="19.2" y="9" width="1.6" height="3.4" rx="0.8" fill="#1a1a1a" fill-opacity="0.35"/>
+    </svg>
+    <span><span class="wm-chrono">Chrono</span><span class="wm-board">Board</span></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <span class="search-count" id="searchCount"></span>
+    <div class="search-box" id="searchBox">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#1a1a1a" stroke-width="1.6"/><path d="M11 11 L14.5 14.5" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <input type="text" id="searchInput" placeholder="포스트잇 검색…">
+      <button class="clear" id="searchClear" title="지우기">✕</button>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="add-btn schedule" data-type="schedule"><span class="dot"></span>일정 추가</button>
+  <button class="add-btn memo" data-type="memo"><span class="dot"></span>메모 추가</button>
+  <button class="add-btn work" data-type="work"><span class="dot"></span>작업공간 추가</button>
+  <button class="add-btn file" data-type="file"><span class="dot"></span>파일 추가</button>
+  <div class="sort-group">
+    <span class="lbl">정렬</span>
+    <button class="sort-btn" data-sort="created">만든 순서</button>
+    <button class="sort-btn" data-sort="type">종류별</button>
+  </div>
+  <span class="hint">정렬 버튼으로 포스트잇을 깔끔하게 정돈하세요 · 카드는 드래그로 이동, 우측 하단에서 크기 조절</span>
+  <span class="storage-status" id="storageStatus" title="변경사항은 이 브라우저에 자동 저장됩니다"></span>
+  <button class="sort-btn" id="clearAllBtn" style="border-color:#f3c2c2;color:#c0392b">전체 비우기</button>
+</div>
+
+<div class="board" id="board">
+  <div class="clock-widget">
+    <div class="clock-face">
+      <svg viewBox="0 0 106 106" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="cg" cx="42%" cy="38%" r="70%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#eef0f4"/>
+          </radialGradient>
+        </defs>
+        <circle cx="53" cy="53" r="50" fill="url(#cg)" stroke="#e2e4ea" stroke-width="2"/>
+        <g id="ticks"></g>
+        <line id="hHour" class="hand" x1="53" y1="53" x2="53" y2="30" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+        <line id="hMin" class="hand" x1="53" y1="53" x2="53" y2="20" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+        <line id="hSec" class="hand" x1="53" y1="57" x2="53" y2="16" stroke="#2f6bff" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="53" cy="53" r="4" fill="#2f6bff"/>
+        <circle cx="53" cy="53" r="1.6" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="clock-info">
+      <div class="clock-digital" id="digital">--:--</div>
+      <div class="clock-date" id="dateline">—</div>
+    </div>
+  </div>
+
+  <!-- Important frame -->
+  <div class="frame" id="frame">
+    <div class="frame-title">⭐ 중요</div>
+    <div class="frame-inner" id="frameInner">
+      <div class="frame-empty" id="frameEmpty">
+        <div class="ic">📌</div>
+        <div>중요한 일정·메모·작업공간을<br>여기로 끌어다 놓으세요</div>
+      </div>
+    </div>
+  </div>
+  <div class="empty" id="empty">
+    <h2>보드가 비어 있어요</h2>
+    <p>위에서 일정·메모·작업공간을 추가해 보세요</p>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="head"><span class="swatch" id="mSwatch"></span><h3 id="mTitle">새 항목</h3></div>
+    <div class="content">
+      <div class="field">
+        <label id="lblTitle">제목</label>
+        <input type="text" id="inTitle" placeholder="제목을 입력하세요">
+      </div>
+      <div class="field" id="metaField">
+        <label id="lblMeta">날짜 / 시간</label>
+        <input type="text" id="inMeta" placeholder="예: 6월 25일 13:00 - 13:45">
+      </div>
+      <div class="field" id="fileField" style="display:none">
+        <label>파일 (그림 / 문서 등)</label>
+        <input type="file" id="inFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.hwp,.zip">
+      </div>
+      <div class="field">
+        <label id="lblBody">내용</label>
+        <textarea id="inBody" placeholder="내용을 입력하세요"></textarea>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" id="btnCancel">취소</button>
+      <button class="btn primary" id="btnSave">보드에 고정</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen workspace -->
+<div class="ws-overlay" id="wsOverlay">
+  <div class="ws-panel">
+    <div class="ws-head">
+      <span class="wtag">작업공간</span>
+      <input class="wtitle" id="wsTitle" placeholder="작업공간 제목">
+      <div class="ws-tools">
+        <button data-wstype="schedule"><span class="wsdot" style="background:var(--schedule-edge)"></span>일정</button>
+        <button data-wstype="memo"><span class="wsdot" style="background:var(--memo-edge)"></span>메모</button>
+        <button data-wstype="file"><span class="wsdot" style="background:var(--file-edge)"></span>파일</button>
+      </div>
+      <button class="ws-close" id="wsClose">✕</button>
+    </div>
+    <div class="ws-body">
+      <div class="ws-text">
+        <textarea id="wsText" placeholder="여기에 자유롭게 글을 입력하세요…"></textarea>
+      </div>
+      <div class="ws-canvas" id="wsCanvas">
+        <div class="empty-mini">우측 상단 버튼으로 일정·메모·파일을 붙여보세요</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image lightbox -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-bar">
+    <span class="lb-name" id="lbName"></span>
+    <a id="lbSave" download>저장</a>
+  </div>
+  <button class="lb-close" id="lbClose">✕ 닫기</button>
+  <img id="lbImg" src="" alt="">
+</div>
+
+<script>
+const board=document.getElementById('board');
+const empty=document.getElementById('empty');
+const overlay=document.getElementById('overlay');
+const frame=document.getElementById('frame');
+const frameInner=document.getElementById('frameInner');
+const frameEmpty=document.getElementById('frameEmpty');
+
+function updateFrameEmpty(){
+  frameEmpty.style.display=frameInner.querySelector('.card')?'none':'flex';
+}
+function updateBoardEmpty(){
+  empty.style.display=board.querySelector('.card')?'none':'flex';
+}
+function moveCardToFrame(card,silent){
+  const d=card._data||(card._data={});
+  if(card.dataset.inframe!=='1'){
+    d._bx=parseInt(card.style.left)||60;
+    d._by=parseInt(card.style.top)||60;
+    d._bw=card.offsetWidth;
+    d._bh=card.offsetHeight;
+  }
+  card.dataset.inframe='1';
+  card.style.transform='none';
+  const sb=card.querySelector('.star-btn');
+  if(sb){sb.textContent='★';sb.classList.add('on');sb.title='보드로 되돌리기';}
+  frameInner.appendChild(card);
+  updateFrameEmpty();updateBoardEmpty();
+  if(!silent)saveState();
+}
+function moveCardToBoard(card){
+  const d=card._data||{};
+  card.dataset.inframe='';
+  const sb=card.querySelector('.star-btn');
+  if(sb){sb.textContent='☆';sb.classList.remove('on');sb.title='중요 표시 / 액자에 보관';}
+  board.appendChild(card);
+  card.style.left=(d._bx!=null?d._bx:60)+'px';
+  card.style.top=(d._by!=null?d._by:60)+'px';
+  if(d._bw)card.style.width=d._bw+'px';
+  if(d._bh){card.style.height=d._bh+'px';card.style.minHeight=d._bh+'px';}
+  const rot=card.classList.contains('schedule')?-2:card.classList.contains('memo')?1.5:card.classList.contains('file')?1:-1;
+  card.style.transform=`rotate(${rot}deg)`;
+  card.style.zIndex=++zTop;
+  updateFrameEmpty();updateBoardEmpty();
+  saveState();
+}
+
+const CONF={
+  schedule:{label:'일정',color:'var(--schedule-edge)',meta:'날짜 / 시간',metaPh:'예: 6월 25일 13:00 - 13:45',titlePh:'예: 마케팅팀 미팅'},
+  memo:{label:'메모',color:'var(--memo-edge)',meta:'',metaPh:'',titlePh:'예: 캠페인 아이디어'},
+  work:{label:'작업공간',color:'var(--work-edge)',meta:'진행률 / 마감',metaPh:'예: 60% · 마감 9월 18일',titlePh:'예: PPT 디자인 #4'},
+  file:{label:'파일',color:'var(--file-edge)',meta:'',metaPh:'',titlePh:'예: 예산안.xlsx'}
+};
+
+let currentType=null;
+let cardCount=0;
+
+document.querySelectorAll('.add-btn').forEach(b=>{
+  b.addEventListener('click',()=>openModal(b.dataset.type));
+});
+document.getElementById('btnCancel').onclick=closeModal;
+document.getElementById('btnSave').onclick=saveCard;
+overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal()});
+
+function openModal(type){
+  currentType=type;
+  const c=CONF[type];
+  document.getElementById('mTitle').textContent='새 '+c.label;
+  document.getElementById('mSwatch').style.background=c.color;
+  document.getElementById('inTitle').value='';
+  document.getElementById('inTitle').placeholder=c.titlePh;
+  document.getElementById('inMeta').value='';
+  document.getElementById('inMeta').placeholder=c.metaPh;
+  document.getElementById('inBody').value='';
+  const mf=document.getElementById('metaField');
+  if(c.meta){mf.style.display='block';document.getElementById('lblMeta').textContent=c.meta;}
+  else{mf.style.display='none';}
+  const ff=document.getElementById('fileField');
+  ff.style.display=(type==='file')?'block':'none';
+  if(type==='file')document.getElementById('inFile').value='';
+  document.getElementById('lblTitle').textContent=(type==='file')?'파일 이름 (선택)':'제목';
+  overlay.classList.add('show');
+  setTimeout(()=>document.getElementById('inTitle').focus(),60);
+}
+function closeModal(){overlay.classList.remove('show');currentType=null;}
+
+function saveCard(){
+  const title=document.getElementById('inTitle').value.trim();
+  const meta=document.getElementById('inMeta').value.trim();
+  const body=document.getElementById('inBody').value.trim();
+  if(currentType==='file'){
+    const f=document.getElementById('inFile').files[0];
+    if(!f && !title){closeModal();return;}
+    if(f){
+      const reader=new FileReader();
+      reader.onload=()=>{
+        createCard('file',title||f.name,meta,body,{name:f.name,size:f.size,type:f.type,data:reader.result});
+        closeModal();
+      };
+      reader.readAsDataURL(f);
+      return;
+    }
+    createCard('file',title,meta,body,{name:title,size:0,type:'',data:null});
+    closeModal();return;
+  }
+  if(!title&&!body){closeModal();return;}
+  createCard(currentType,title,meta,body);
+  closeModal();
+}
+
+function fmtSize(b){
+  if(!b)return'';
+  if(b<1024)return b+' B';
+  if(b<1048576)return (b/1024).toFixed(1)+' KB';
+  return (b/1048576).toFixed(1)+' MB';
+}
+function fileBadge(file){
+  if(!file)return'';
+  const isImg=file.type&&file.type.startsWith('image/');
+  const openBtn=file.data?`<a class="preview js-open" data-src="${file.data}" data-name="${esc(file.name)}" data-img="${isImg?1:0}">열기</a>`:'';
+  const saveBtn=file.data?`<a class="preview" href="${file.data}" download="${esc(file.name)}">저장</a>`:'';
+  const actions=file.data?`<div class="factions">${openBtn}${saveBtn}</div>`:'';
+  if(isImg&&file.data){
+    return `<div class="file-attach"><img class="js-open" data-src="${file.data}" data-name="${esc(file.name)}" data-img="1" src="${file.data}" alt=""><div class="fmeta"><div class="fname">${esc(file.name)}</div><div class="fsize">${fmtSize(file.size)}</div>${actions}</div></div>`;
+  }
+  const ext=(file.name.split('.').pop()||'FILE').toUpperCase().slice(0,4);
+  return `<div class="file-attach"><div class="fic">${esc(ext)}</div><div class="fmeta"><div class="fname">${esc(file.name)}</div><div class="fsize">${fmtSize(file.size)}</div>${actions}</div></div>`;
+}
+
+function createCard(type,title,meta,body,file,opts){
+  opts=opts||{};
+  empty.style.display='none';
+  const c=CONF[type];
+  const card=document.createElement('div');
+  card.className='card '+type;
+  card.dataset.type=type;
+  card.dataset.order=(opts.order!=null)?opts.order:cardCount;
+  card._typeRank={schedule:0,memo:1,work:2,file:3}[type];
+
+  // placement (keep clear of the right-side frame area)
+  const FRAME_RESERVE=330;
+  const bw=Math.max(board.clientWidth-FRAME_RESERVE,360), bh=board.clientHeight;
+  const baseW=type==='work'?340:240;
+  let x,y;
+  if(opts.x!=null){x=opts.x;y=opts.y;}
+  else{
+    x=40+(cardCount*46)%(Math.max(bw-baseW-40,40));
+    y=30+(cardCount*38)%(Math.max(bh-260,40));
+  }
+  card.style.left=x+'px';
+  card.style.top=y+'px';
+  if(opts.w)card.style.width=opts.w+'px';
+  if(opts.h){card.style.height=opts.h+'px';card.style.minHeight=opts.h+'px';}
+  if((opts.order!=null)&&opts.order>=cardCount)cardCount=opts.order+1;
+  else if(opts.order==null)cardCount++;
+
+  card.innerHTML=`
+    <div class="pin"></div>
+    <div class="ctrl"><button class="star-btn" title="중요 표시 / 액자에 보관">☆</button><button class="copy-btn" title="내용 복사">⧉</button><button class="del-btn" title="삭제">✕</button></div>
+    <button class="expand" title="작업공간 크게 보기">⤢</button>
+    <div class="tag">${c.label}</div>
+    ${title?`<div class="title">${esc(title)}</div>`:''}
+    ${body?`<div class="body">${esc(body)}</div>`:''}
+    ${file?fileBadge(file):''}
+    ${meta?`<div class="meta">⏱ ${esc(meta)}</div>`:''}
+    <div class="resize"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M13 1 L1 13 M13 6 L6 13 M13 11 L11 13" stroke="rgba(0,0,0,.4)" stroke-width="1.4" fill="none"/></svg></div>
+  `;
+  board.appendChild(card);
+
+  // persistent data object
+  card._data={type,title,meta,body,file:file||null};
+
+  card.querySelector('.del-btn').onclick=e=>{
+    e.stopPropagation();
+    card.remove();
+    updateBoardEmpty();updateFrameEmpty();
+    saveState();
+  };
+
+  card._copyText=buildCopyText(c.label,title,meta,body,file);
+  card.querySelector('.copy-btn').onclick=e=>{
+    e.stopPropagation();
+    let txt=card._copyText;
+    if(type==='work'&&card._ws)txt=workspaceCopyText(card._ws);
+    copyToClipboard(txt,card.querySelector('.copy-btn'));
+  };
+
+  card.querySelector('.star-btn').onclick=e=>{
+    e.stopPropagation();
+    if(card.dataset.inframe==='1')moveCardToBoard(card);
+    else moveCardToFrame(card);
+  };
+
+  if(type==='work'){
+    card._ws=opts.ws||{title:title||'작업공간',text:'',items:[]};
+    card.querySelector('.expand').onclick=e=>{e.stopPropagation();openWorkspace(card);};
+  }
+
+  makeDraggable(card);
+  makeResizable(card);
+  card._search=((c.label+' '+(title||'')+' '+(body||'')+' '+(meta||'')+' '+(file?file.name:''))).toLowerCase();
+  if(typeof applySearch==='function')applySearch();
+  if(opts.inframe){moveCardToFrame(card,true);}
+  if(!opts.silent)saveState();
+  return card;
+}
+
+function esc(s){return s.replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+function buildCopyText(label,title,meta,body,file){
+  const lines=[];
+  lines.push('['+label+']');
+  if(title)lines.push(title);
+  if(meta)lines.push('⏱ '+meta);
+  if(body)lines.push('\n'+body);
+  if(file)lines.push('📎 '+file.name+(file.size?' ('+fmtSize(file.size)+')':''));
+  return lines.join('\n').trim();
+}
+function workspaceCopyText(ws){
+  const lines=['[작업공간] '+ (ws.title||'')];
+  if(ws.text&&ws.text.trim())lines.push('\n'+ws.text.trim());
+  if(ws.items&&ws.items.length){
+    lines.push('\n── 붙인 항목 ──');
+    ws.items.forEach(it=>{
+      lines.push('\n'+buildCopyText(CONF[it.type].label,it.title,it.meta,it.body,it.file));
+    });
+  }
+  return lines.join('\n').trim();
+}
+function copyToClipboard(text,btn){
+  const done=()=>{
+    if(!btn)return;
+    const old=btn.textContent;
+    btn.textContent='✓';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent=old;btn.classList.remove('copied');},1100);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  }else{
+    fallbackCopy(text,done);
+  }
+}
+function fallbackCopy(text,done){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');done();}catch(e){}
+  ta.remove();
+}
+
+// ---- Drag ----
+function isOverFrame(ev){
+  const r=frame.getBoundingClientRect();
+  return ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;
+}
+function makeDraggable(card){
+  let sx,sy,ox,oy,rot;
+  card.addEventListener('mousedown',e=>{
+    if(e.target.closest('.resize')||e.target.closest('.ctrl')||e.target.closest('.js-open'))return;
+    if(card.dataset.inframe==='1')return; // framed cards don't free-drag
+    const cs=getComputedStyle(card);
+    rot=cs.transform;
+    card.classList.add('dragging');
+    card.style.transform='rotate(0deg)';
+    card.style.zIndex=++zTop;
+    sx=e.clientX;sy=e.clientY;
+    ox=card.offsetLeft;oy=card.offsetTop;
+    const move=ev=>{
+      let nx=ox+(ev.clientX-sx), ny=oy+(ev.clientY-sy);
+      nx=Math.max(0,Math.min(nx,board.clientWidth-card.offsetWidth));
+      ny=Math.max(0,Math.min(ny,board.clientHeight-card.offsetHeight));
+      card.style.left=nx+'px';card.style.top=ny+'px';
+      frame.classList.toggle('drop-hover',isOverFrame(ev));
+    };
+    const up=(ev)=>{
+      card.classList.remove('dragging');
+      card.style.transform=rot;
+      document.removeEventListener('mousemove',move);
+      frame.classList.remove('drop-hover');
+      if(isOverFrame(ev)){moveCardToFrame(card);}
+      else{
+        // keep card clear of the frame strip so it isn't hidden behind it
+        const maxX=board.clientWidth-330-card.offsetWidth;
+        if((parseInt(card.style.left)||0)>maxX){card.style.left=Math.max(0,maxX)+'px';}
+      }
+      document.removeEventListener('mouseup',up);
+      saveState();
+    };
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+    e.preventDefault();
+  });
+}
+
+// ---- Resize (all three types) ----
+function makeResizable(card){
+  const h=card.querySelector('.resize');
+  h.addEventListener('mousedown',e=>{
+    e.stopPropagation();
+    const sx=e.clientX,sy=e.clientY;
+    const sw=card.offsetWidth,sh=card.offsetHeight;
+    const cs=getComputedStyle(card),rot=cs.transform;
+    card.style.transform='rotate(0deg)';
+    const move=ev=>{
+      let nw=Math.max(190,sw+(ev.clientX-sx));
+      let nh=Math.max(130,sh+(ev.clientY-sy));
+      card.style.width=nw+'px';
+      card.style.minHeight=nh+'px';
+      card.style.height=nh+'px';
+    };
+    const up=()=>{
+      card.style.transform=rot;
+      document.removeEventListener('mousemove',move);
+      document.removeEventListener('mouseup',up);
+      saveState();
+    };
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+  });
+}
+
+let zTop=10;
+
+/* ---------- Analog clock ---------- */
+(function(){
+  const ticks=document.getElementById('ticks');
+  for(let i=0;i<12;i++){
+    const a=i*30*Math.PI/180;
+    const long=(i%3===0);
+    const r1=long?40:43, r2=47;
+    const x1=53+r1*Math.sin(a), y1=53-r1*Math.cos(a);
+    const x2=53+r2*Math.sin(a), y2=53-r2*Math.cos(a);
+    const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);
+    l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('stroke',long?'#1a1a1a':'#c5c9d2');
+    l.setAttribute('stroke-width',long?2:1.3);
+    l.setAttribute('stroke-linecap','round');
+    ticks.appendChild(l);
+  }
+  const hH=document.getElementById('hHour'),hM=document.getElementById('hMin'),hS=document.getElementById('hSec');
+  const dig=document.getElementById('digital'),dl=document.getElementById('dateline');
+  const days=['일','월','화','수','목','금','토'];
+  function tick(){
+    const n=new Date();
+    const s=n.getSeconds(),m=n.getMinutes(),h=n.getHours();
+    hS.style.transform=`rotate(${s*6}deg)`;
+    hM.style.transform=`rotate(${m*6+s*0.1}deg)`;
+    hH.style.transform=`rotate(${(h%12)*30+m*0.5}deg)`;
+    const ap=h<12?'오전':'오후';
+    const h12=((h%12)||12);
+    dig.textContent=`${ap} ${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    dl.textContent=`${n.getMonth()+1}월 ${n.getDate()}일 (${days[n.getDay()]})`;
+  }
+  tick();setInterval(tick,1000);
+})();
+
+/* ---------- Sort / tidy cards ---------- */
+let activeSort=null;
+document.querySelectorAll('.sort-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    activeSort=b.dataset.sort;
+    arrangeCards(activeSort);
+  });
+});
+
+function arrangeCards(mode){
+  const cards=[...board.querySelectorAll('.card')].filter(c=>c.dataset.inframe!=='1');
+  if(!cards.length)return;
+  cards.sort((a,b)=>{
+    if(mode==='type'){
+      if(a._typeRank!==b._typeRank)return a._typeRank-b._typeRank;
+      return (+a.dataset.order)-(+b.dataset.order);
+    }
+    return (+a.dataset.order)-(+b.dataset.order);
+  });
+  // grid layout, leaving room for the clock widget on the right
+  const padX=40, padY=28, gapX=24, gapY=26;
+  const clockReserve=185;
+  const avail=board.clientWidth-padX-clockReserve;
+  let x=padX, y=padY, rowH=0;
+  cards.forEach((card,i)=>{
+    const w=card.offsetWidth, h=card.offsetHeight;
+    if(x+w>avail && x>padX){x=padX;y+=rowH+gapY;rowH=0;}
+    const rot=card.classList.contains('schedule')?-2:card.classList.contains('memo')?1.5:-1;
+    card.style.transition='left .5s cubic-bezier(.3,1,.4,1), top .5s cubic-bezier(.3,1,.4,1)';
+    card.style.left=x+'px';
+    card.style.top=y+'px';
+    card.style.transform=`rotate(${rot}deg)`;
+    x+=w+gapX;
+    rowH=Math.max(rowH,h);
+    setTimeout(()=>{card.style.transition='box-shadow .2s ease';},520);
+  });
+  setTimeout(saveState,560);
+}
+
+/* ---------- Fullscreen workspace ---------- */
+const wsOverlay=document.getElementById('wsOverlay');
+const wsCanvas=document.getElementById('wsCanvas');
+const wsText=document.getElementById('wsText');
+const wsTitle=document.getElementById('wsTitle');
+let activeWork=null;
+let wsCount=0;
+
+document.getElementById('wsClose').onclick=closeWorkspace;
+wsOverlay.addEventListener('click',e=>{if(e.target===wsOverlay)closeWorkspace();});
+
+function openWorkspace(card){
+  activeWork=card;
+  const ws=card._ws;
+  wsTitle.value=ws.title;
+  wsText.value=ws.text;
+  // clear canvas (keep empty hint)
+  [...wsCanvas.querySelectorAll('.card')].forEach(n=>n.remove());
+  ws.items.forEach(it=>renderWsItem(it,false));
+  updateMiniEmpty();
+  wsOverlay.classList.add('show');
+}
+function closeWorkspace(){
+  if(activeWork){
+    activeWork._ws.title=wsTitle.value.trim()||'작업공간';
+    activeWork._ws.text=wsText.value;
+    // reflect title on the board card
+    const t=activeWork.querySelector('.title');
+    if(t)t.textContent=activeWork._ws.title;
+  }
+  wsOverlay.classList.remove('show');
+  activeWork=null;
+  saveState();
+}
+wsText.addEventListener('input',()=>{if(activeWork){activeWork._ws.text=wsText.value;saveStateDebounced();}});
+wsTitle.addEventListener('input',()=>{if(activeWork){activeWork._ws.title=wsTitle.value.trim()||'작업공간';saveStateDebounced();}});
+
+document.querySelectorAll('.ws-tools button').forEach(b=>{
+  b.onclick=()=>addWsItem(b.dataset.wstype);
+});
+
+function addWsItem(type){
+  const c=CONF[type];
+  if(type==='file'){
+    const inp=document.createElement('input');
+    inp.type='file';
+    inp.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.hwp,.zip';
+    inp.onchange=()=>{
+      const f=inp.files[0];
+      const finish=(fileObj)=>{
+        const title=prompt('파일 카드 제목 (선택)', f?f.name:'')||(f?f.name:'파일');
+        const it={type,title,meta:'',body:'',file:fileObj,x:60+wsCount*34,y:50+wsCount*30};
+        activeWork._ws.items.push(it);wsCount++;renderWsItem(it,true);updateMiniEmpty();saveState();
+      };
+      if(f){const r=new FileReader();r.onload=()=>finish({name:f.name,size:f.size,type:f.type,data:r.result});r.readAsDataURL(f);}
+      else finish(null);
+    };
+    inp.click();
+    return;
+  }
+  const title=prompt(c.label+' 제목','')||'';
+  const body=prompt(c.label+' 내용','')||'';
+  let meta='';
+  if(type==='schedule')meta=prompt('날짜 / 시간 (선택)','')||'';
+  if(!title&&!body){return;}
+  const it={type,title,meta,body,file:null,x:60+wsCount*34,y:50+wsCount*30};
+  activeWork._ws.items.push(it);wsCount++;renderWsItem(it,true);updateMiniEmpty();saveState();
+}
+
+function renderWsItem(it,animate){
+  const c=CONF[it.type];
+  const card=document.createElement('div');
+  card.className='card '+it.type;
+  card.style.left=it.x+'px';card.style.top=it.y+'px';
+  if(it.type==='work'){card.style.width='240px';card.style.minHeight='150px';}
+  card.innerHTML=`
+    <div class="pin"></div>
+    <div class="ctrl"><button class="copy-btn" title="내용 복사">⧉</button><button class="del-btn" title="삭제">✕</button></div>
+    <div class="tag">${c.label}</div>
+    ${it.title?`<div class="title">${esc(it.title)}</div>`:''}
+    ${it.body?`<div class="body">${esc(it.body)}</div>`:''}
+    ${it.file?fileBadge(it.file):''}
+    ${it.meta?`<div class="meta">⏱ ${esc(it.meta)}</div>`:''}
+    <div class="resize"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M13 1 L1 13 M13 6 L6 13 M13 11 L11 13" stroke="rgba(0,0,0,.4)" stroke-width="1.4" fill="none"/></svg></div>
+  `;
+  wsCanvas.appendChild(card);
+  card.querySelector('.del-btn').onclick=e=>{
+    e.stopPropagation();
+    const idx=activeWork._ws.items.indexOf(it);
+    if(idx>-1)activeWork._ws.items.splice(idx,1);
+    card.remove();updateMiniEmpty();saveState();
+  };
+  card.querySelector('.copy-btn').onclick=e=>{
+    e.stopPropagation();
+    copyToClipboard(buildCopyText(c.label,it.title,it.meta,it.body,it.file),card.querySelector('.copy-btn'));
+  };
+  // drag within canvas
+  makeDraggableIn(card,wsCanvas,it);
+  makeResizable(card);
+}
+
+function updateMiniEmpty(){
+  const e=wsCanvas.querySelector('.empty-mini');
+  if(e)e.style.display=wsCanvas.querySelector('.card')?'none':'flex';
+}
+
+function makeDraggableIn(card,container,it){
+  card.addEventListener('mousedown',e=>{
+    if(e.target.closest('.resize')||e.target.closest('.ctrl')||e.target.closest('.js-open'))return;
+    const cs=getComputedStyle(card),rot=cs.transform;
+    card.classList.add('dragging');card.style.transform='rotate(0deg)';
+    card.style.zIndex=++zTop;
+    const sx=e.clientX,sy=e.clientY,ox=card.offsetLeft,oy=card.offsetTop;
+    const move=ev=>{
+      let nx=ox+(ev.clientX-sx),ny=oy+(ev.clientY-sy);
+      nx=Math.max(0,Math.min(nx,container.clientWidth-card.offsetWidth));
+      ny=Math.max(0,Math.min(ny,container.clientHeight-card.offsetHeight));
+      card.style.left=nx+'px';card.style.top=ny+'px';
+      if(it){it.x=nx;it.y=ny;}
+    };
+    const up=()=>{
+      card.classList.remove('dragging');card.style.transform=rot;
+      document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+      saveState();
+    };
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+    e.preventDefault();
+  });
+}
+
+/* ---------- Search ---------- */
+const searchInput=document.getElementById('searchInput');
+const searchBox=document.getElementById('searchBox');
+const searchClear=document.getElementById('searchClear');
+const searchCount=document.getElementById('searchCount');
+
+function applySearch(){
+  const q=searchInput.value.trim().toLowerCase();
+  const cards=[...board.querySelectorAll('.card')];
+  const boardCards=cards.filter(c=>c.dataset.inframe!=='1');
+  searchBox.classList.toggle('has-text',q.length>0);
+  const eh=empty.querySelector('h2'), ep=empty.querySelector('p');
+  if(!q){
+    cards.forEach(c=>{c.classList.remove('search-hidden','search-hit');});
+    searchCount.textContent='';
+    eh.textContent='보드가 비어 있어요';
+    ep.textContent='위에서 일정·메모·작업공간·파일을 추가해 보세요';
+    empty.style.display=boardCards.length?'none':'flex';
+    updateFrameEmpty();
+    return;
+  }
+  let hits=0;
+  cards.forEach(c=>{
+    const match=(c._search||'').includes(q);
+    c.classList.toggle('search-hidden',!match);
+    c.classList.toggle('search-hit',match);
+    if(match)hits++;
+  });
+  searchCount.textContent=`${hits}개 일치`;
+  if(hits===0){
+    eh.textContent='검색 결과가 없어요';
+    ep.textContent=`"${searchInput.value.trim()}"와 일치하는 포스트잇이 없습니다`;
+    empty.style.display='flex';
+  }else{
+    empty.style.display='none';
+  }
+  updateFrameEmpty();
+}
+
+searchInput.addEventListener('input',applySearch);
+searchClear.addEventListener('click',()=>{searchInput.value='';applySearch();searchInput.focus();});
+
+/* ---------- Open file (lightbox for images, popup/download for others) ---------- */
+const lightbox=document.getElementById('lightbox');
+const lbImg=document.getElementById('lbImg');
+const lbName=document.getElementById('lbName');
+const lbSave=document.getElementById('lbSave');
+document.getElementById('lbClose').onclick=closeLightbox;
+lightbox.addEventListener('click',e=>{if(e.target===lightbox)closeLightbox();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
+
+function openLightbox(src,name){
+  lbImg.src=src;
+  lbName.textContent=name||'이미지';
+  lbSave.href=src;lbSave.download=name||'image';
+  lightbox.classList.add('show');
+}
+function closeLightbox(){lightbox.classList.remove('show');lbImg.src='';}
+
+function dataURLtoBlobURL(dataURL){
+  try{
+    const [head,b64]=dataURL.split(',');
+    const mime=(head.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';
+    const bin=atob(b64);const len=bin.length;const arr=new Uint8Array(len);
+    for(let i=0;i<len;i++)arr[i]=bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([arr],{type:mime}));
+  }catch(err){return null;}
+}
+
+// event delegation – works for cards on board AND inside workspace canvas
+document.addEventListener('click',e=>{
+  const el=e.target.closest('.js-open');
+  if(!el)return;
+  e.preventDefault();e.stopPropagation();
+  const src=el.dataset.src, name=el.dataset.name, isImg=el.dataset.img==='1';
+  if(isImg){openLightbox(src,name);return;}
+  // non-image: open in a new tab via blob URL (works in sandbox), fallback to download
+  const blobUrl=dataURLtoBlobURL(src);
+  const win=blobUrl?window.open(blobUrl,'_blank'):null;
+  if(!win){
+    const a=document.createElement('a');
+    a.href=src;a.download=name||'file';document.body.appendChild(a);a.click();a.remove();
+  }
+});
+
+/* =========================================================
+   Persistence — localStorage
+   ========================================================= */
+const STORAGE_KEY='chronoboard.v1';
+let _saveTimer=null;
+function saveStateDebounced(){clearTimeout(_saveTimer);_saveTimer=setTimeout(saveState,400);}
+
+function collectState(){
+  const cards=[...board.querySelectorAll('.card')].map(card=>{
+    const d=card._data||{};
+    const framed=card.dataset.inframe==='1';
+    const o={
+      type:d.type,
+      title:d.title||'',
+      meta:d.meta||'',
+      body:d.body||'',
+      file:d.file||null,
+      x:framed?(d._bx||60):(parseInt(card.style.left)||0),
+      y:framed?(d._by||60):(parseInt(card.style.top)||0),
+      w:framed?(d._bw||undefined):card.offsetWidth,
+      h:framed?(d._bh||undefined):card.offsetHeight,
+      order:parseInt(card.dataset.order)||0,
+      inframe:framed
+    };
+    if(d.type==='work'&&card._ws)o.ws=card._ws;
+    return o;
+  });
+  return {cards,savedAt:Date.now()};
+}
+
+function saveState(){
+  const state=collectState();
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    flagStorage(true,state);
+  }catch(err){
+    // Quota exceeded → retry without heavy file data
+    const stripped={...state,cards:state.cards.map(c=>{
+      if(c.file&&c.file.data){return {...c,file:{...c.file,data:null,dropped:true}};}
+      return c;
+    })};
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(stripped));
+      flagStorage('partial',stripped);
+    }catch(e2){
+      flagStorage(false,state);
+    }
+  }
+}
+
+function restoreState(){
+  let raw=null;
+  try{raw=localStorage.getItem(STORAGE_KEY);}catch(e){return;}
+  if(!raw)return;
+  let state;
+  try{state=JSON.parse(raw);}catch(e){return;}
+  if(!state||!state.cards||!state.cards.length)return;
+  state.cards.sort((a,b)=>a.order-b.order).forEach(c=>{
+    const file=c.file&&c.file.dropped?{...c.file,data:null}:c.file;
+    const card=createCard(c.type,c.title,c.meta,c.body,file,{
+      x:c.x,y:c.y,w:c.w,h:c.h,order:c.order,ws:c.ws,silent:true,inframe:c.inframe
+    });
+    if(c.inframe&&card._data){card._data._bx=c.x;card._data._by=c.y;card._data._bw=c.w;card._data._bh=c.h;}
+  });
+  updateFrameEmpty();updateBoardEmpty();
+}
+
+function clearAllData(){
+  if(!confirm('보드의 모든 포스트잇을 삭제하고 저장된 데이터를 지울까요? 되돌릴 수 없습니다.'))return;
+  [...board.querySelectorAll('.card')].forEach(c=>c.remove());
+  try{localStorage.removeItem(STORAGE_KEY);}catch(e){}
+  empty.style.display='flex';
+  cardCount=0;
+  updateFrameEmpty();
+  flagStorage(true,{cards:[]});
+}
+
+/* storage status indicator in the toolbar */
+function flagStorage(ok,state){
+  const el=document.getElementById('storageStatus');
+  if(!el)return;
+  const n=state&&state.cards?state.cards.length:0;
+  if(ok===true){el.textContent=`💾 저장됨 · ${n}개`;el.style.color='var(--sub)';}
+  else if(ok==='partial'){el.textContent='⚠ 일부 파일은 용량 초과로 저장 안 됨';el.style.color='#c2740a';}
+  else{el.textContent='⚠ 저장 실패 (저장공간 가득 참)';el.style.color='#c2410c';}
+}
+
+// restore on load
+restoreState();
+document.getElementById('clearAllBtn').onclick=clearAllData;
+window.addEventListener('beforeunload',saveState);
+</script>
+</body>
+</html>
