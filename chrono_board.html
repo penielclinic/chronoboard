@@ -20,6 +20,8 @@
     --work-edge:#a6e0b1;
     --file:#f3e3ff;         /* 파일 - 보라 */
     --file-edge:#cda6e8;
+    --alarm:#e8e2ff;        /* 알림 - 라벤더 */
+    --alarm-edge:#b3a4ee;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -155,6 +157,8 @@
   .card.dragging{box-shadow:0 24px 50px rgba(0,0,0,.28);z-index:999!important}
   .card.schedule{background:var(--schedule);transform:rotate(-2deg)}
   .card.memo{background:var(--memo);transform:rotate(1.5deg)}
+  .card.alarm{background:var(--alarm);transform:rotate(-1.5deg)}
+  .card.alarm .tag::before{content:"🔔 "}
   .card.work{background:var(--work);transform:rotate(-1deg);width:340px;min-height:230px}
 
   /* file card – shaped like a file/folder */
@@ -336,6 +340,60 @@
   .btn.ghost{background:#f1f2f5;color:#555}
   .btn.primary{background:var(--blue);color:#fff;box-shadow:0 6px 16px rgba(47,107,255,.35)}
 
+  /* ---------- Alarm modal ---------- */
+  .alarm-modal{width:540px;max-width:94vw}
+  .alarm-perm{font-size:12.5px;color:var(--sub);margin-bottom:14px;padding:10px 12px;background:#f6f4fb;border-radius:10px;display:flex;align-items:center;gap:10px}
+  .alarm-perm button{border:none;background:var(--blue);color:#fff;font-weight:600;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .freq-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .freq-row .freq{
+    border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:13px;font-weight:600;
+    color:#555;padding:8px 14px;border-radius:10px;transition:all .15s;
+  }
+  .freq-row .freq.active{background:#7a3fb8;border-color:#7a3fb8;color:#fff}
+  .dow-row{display:flex;gap:6px;margin-bottom:14px}
+  .dow-row .dow{
+    flex:1;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:13px;font-weight:600;
+    color:#555;padding:9px 0;border-radius:9px;text-align:center;transition:all .15s;
+  }
+  .dow-row .dow.active{background:#7a3fb8;border-color:#7a3fb8;color:#fff}
+  .time-row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+  .time-row select,.time-row input[type=number]{
+    border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit;
+  }
+  .alarm-list{margin-top:6px;max-height:230px;overflow-y:auto}
+  .alarm-item{
+    display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);
+    border-radius:11px;margin-bottom:8px;background:#fafafb;
+  }
+  .alarm-item .ai-when{font-weight:700;font-size:13px;color:#7a3fb8;white-space:nowrap}
+  .alarm-item .ai-msg{flex:1;font-size:13.5px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .alarm-item .ai-del{border:none;background:#f1f2f5;cursor:pointer;width:26px;height:26px;border-radius:7px;color:#888;font-size:13px}
+  .alarm-item .ai-del:hover{background:#ffe0e0;color:#c0392b}
+  .alarm-item .ai-test{border:none;background:#efe9fb;cursor:pointer;width:26px;height:26px;border-radius:7px;color:#7a3fb8;font-size:11px}
+  .alarm-item .ai-test:hover{background:#7a3fb8;color:#fff}
+  .alarm-item.off{opacity:.5}
+  .alarm-empty{text-align:center;color:#b7bcc4;font-size:13px;padding:20px}
+  .alarm-toggle{position:relative;width:38px;height:22px;border-radius:20px;background:#cfd2d8;cursor:pointer;transition:background .2s;flex:none}
+  .alarm-toggle.on{background:#7a3fb8}
+  .alarm-toggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+  .alarm-toggle.on::after{left:18px}
+
+  /* ---------- Alarm banner (in-app notification) ---------- */
+  .alarm-banner-wrap{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column;gap:10px;align-items:center;width:auto}
+  .alarm-banner{
+    min-width:300px;max-width:90vw;background:#fff;border-radius:14px;
+    box-shadow:0 18px 50px rgba(0,0,0,.28);border-left:5px solid #7a3fb8;
+    padding:14px 18px;display:flex;align-items:flex-start;gap:13px;
+    animation:slideDown .35s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes slideDown{from{transform:translateY(-20px);opacity:0}to{transform:none;opacity:1}}
+  .alarm-banner .ab-ic{font-size:22px;line-height:1}
+  .alarm-banner .ab-body{flex:1}
+  .alarm-banner .ab-title{font-weight:800;font-size:13px;color:#7a3fb8;margin-bottom:3px}
+  .alarm-banner .ab-msg{font-size:14px;color:#1a1a1a;line-height:1.45}
+  .alarm-banner .ab-time{font-size:11px;color:var(--sub);margin-top:4px}
+  .alarm-banner .ab-close{border:none;background:none;cursor:pointer;color:#aaa;font-size:16px;line-height:1}
+
   /* ---------- Sort buttons ---------- */
   .sort-group{display:flex;align-items:center;gap:8px;margin-left:14px;padding-left:14px;border-left:1px solid var(--line)}
   .sort-group .lbl{font-size:12px;color:var(--sub);font-weight:600;letter-spacing:.2px}
@@ -406,6 +464,7 @@
   </div>
   <span class="hint">정렬 버튼으로 포스트잇을 깔끔하게 정돈하세요 · 카드는 드래그로 이동, 우측 하단에서 크기 조절</span>
   <span class="storage-status" id="storageStatus" title="변경사항은 이 브라우저에 자동 저장됩니다"></span>
+  <button class="sort-btn" id="alarmBtn" style="border-color:#cdb4f0;color:#7a3fb8">🔔 알림</button>
   <button class="sort-btn" id="clearAllBtn" style="border-color:#f3c2c2;color:#c0392b">전체 비우기</button>
 </div>
 
@@ -513,6 +572,79 @@
   <img id="lbImg" src="" alt="">
 </div>
 
+<!-- Alarm modal -->
+<div class="overlay" id="alarmOverlay">
+  <div class="modal alarm-modal">
+    <div class="head"><span class="swatch" style="background:#7a3fb8"></span><h3>🔔 알림 설정</h3></div>
+    <div class="content">
+      <div class="alarm-perm" id="alarmPerm" style="display:none">
+        <span style="flex:1">데스크톱 알림을 켜면 화면 밖에서도 알림을 받을 수 있어요.</span>
+        <button id="alarmPermBtn">알림 켜기</button>
+      </div>
+
+      <div class="field" style="margin-bottom:10px">
+        <label>알림 메시지</label>
+        <input type="text" id="alarmMsg" placeholder="예: 약 복용 시간입니다 / 주간 회의 준비">
+      </div>
+
+      <div class="field" style="margin-bottom:8px">
+        <label>주기</label>
+        <div class="freq-row" id="freqRow">
+          <button class="freq active" data-freq="daily">매일</button>
+          <button class="freq" data-freq="weekly">매주</button>
+          <button class="freq" data-freq="monthly">매월</button>
+          <button class="freq" data-freq="today">오늘</button>
+          <button class="freq" data-freq="tomorrow">내일</button>
+          <button class="freq" data-freq="date">날짜 정하기</button>
+        </div>
+      </div>
+
+      <div class="field" id="dowField" style="margin-bottom:8px;display:none">
+        <label>요일 (매주)</label>
+        <div class="dow-row" id="dowRow">
+          <div class="dow" data-d="0">일</div><div class="dow" data-d="1">월</div>
+          <div class="dow" data-d="2">화</div><div class="dow" data-d="3">수</div>
+          <div class="dow" data-d="4">목</div><div class="dow" data-d="5">금</div>
+          <div class="dow" data-d="6">토</div>
+        </div>
+      </div>
+
+      <div class="field" id="domField" style="margin-bottom:8px;display:none">
+        <label>날짜 (매월 며칠)</label>
+        <div class="time-row">
+          <input type="number" id="alarmDom" min="1" max="31" value="1" style="width:90px"> 일
+        </div>
+      </div>
+
+      <div class="field" id="dateField" style="margin-bottom:8px;display:none">
+        <label>날짜 정하기</label>
+        <div class="time-row">
+          <input type="date" id="alarmDate" style="width:180px">
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:6px">
+        <label>시각</label>
+        <div class="time-row">
+          <select id="alarmHour"></select> 시
+          <select id="alarmMin"></select> 분
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" id="alarmCancel">닫기</button>
+      <button class="btn primary" id="alarmAdd" style="background:#7a3fb8;box-shadow:0 6px 16px rgba(122,63,184,.35)">알림 추가</button>
+    </div>
+    <div class="content" style="padding-top:0">
+      <label style="display:block;font-size:12.5px;font-weight:600;color:var(--sub);margin-bottom:7px">등록된 알림</label>
+      <div class="alarm-list" id="alarmList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Alarm banners -->
+<div class="alarm-banner-wrap" id="alarmBannerWrap"></div>
+
 <script>
 const board=document.getElementById('board');
 const empty=document.getElementById('empty');
@@ -564,7 +696,8 @@ const CONF={
   schedule:{label:'일정',color:'var(--schedule-edge)',meta:'날짜 / 시간',metaPh:'예: 6월 25일 13:00 - 13:45',titlePh:'예: 마케팅팀 미팅'},
   memo:{label:'메모',color:'var(--memo-edge)',meta:'',metaPh:'',titlePh:'예: 캠페인 아이디어'},
   work:{label:'작업공간',color:'var(--work-edge)',meta:'진행률 / 마감',metaPh:'예: 60% · 마감 9월 18일',titlePh:'예: PPT 디자인 #4'},
-  file:{label:'파일',color:'var(--file-edge)',meta:'',metaPh:'',titlePh:'예: 예산안.xlsx'}
+  file:{label:'파일',color:'var(--file-edge)',meta:'',metaPh:'',titlePh:'예: 예산안.xlsx'},
+  alarm:{label:'알림',color:'var(--alarm-edge)',meta:'',metaPh:'',titlePh:''}
 };
 
 let currentType=null;
@@ -1217,6 +1350,259 @@ function flagStorage(ok,state){
 restoreState();
 document.getElementById('clearAllBtn').onclick=clearAllData;
 window.addEventListener('beforeunload',saveState);
+
+/* =========================================================
+   Alarms / Notifications
+   ========================================================= */
+const ALARM_KEY='chronoboard.alarms.v1';
+let alarms=[];
+const DOW_KR=['일','월','화','수','목','금','토'];
+
+// --- load/save alarms ---
+function loadAlarms(){
+  try{const r=localStorage.getItem(ALARM_KEY);alarms=r?JSON.parse(r):[];}catch(e){alarms=[];}
+}
+function saveAlarms(){
+  try{localStorage.setItem(ALARM_KEY,JSON.stringify(alarms));}catch(e){}
+}
+
+// --- UI element refs ---
+const alarmOverlay=document.getElementById('alarmOverlay');
+const alarmMsg=document.getElementById('alarmMsg');
+const freqRow=document.getElementById('freqRow');
+const dowRow=document.getElementById('dowRow');
+const dowField=document.getElementById('dowField');
+const domField=document.getElementById('domField');
+const alarmDom=document.getElementById('alarmDom');
+const dateField=document.getElementById('dateField');
+const alarmDate=document.getElementById('alarmDate');
+const alarmHour=document.getElementById('alarmHour');
+const alarmMin=document.getElementById('alarmMin');
+const alarmListEl=document.getElementById('alarmList');
+const alarmBannerWrap=document.getElementById('alarmBannerWrap');
+
+// populate hour/min selects
+for(let i=0;i<24;i++){const o=document.createElement('option');o.value=i;o.textContent=String(i).padStart(2,'0');alarmHour.appendChild(o);}
+for(let i=0;i<60;i+=5){const o=document.createElement('option');o.value=i;o.textContent=String(i).padStart(2,'0');alarmMin.appendChild(o);}
+alarmHour.value=9;alarmMin.value=0;
+
+let curFreq='daily';
+let selectedDows=new Set();
+
+// open/close modal
+document.getElementById('alarmBtn').onclick=()=>{openAlarmModal();};
+document.getElementById('alarmCancel').onclick=()=>alarmOverlay.classList.remove('show');
+alarmOverlay.addEventListener('click',e=>{if(e.target===alarmOverlay)alarmOverlay.classList.remove('show');});
+
+function openAlarmModal(){
+  renderAlarmList();
+  // permission notice
+  const pn=document.getElementById('alarmPerm');
+  if('Notification' in window && Notification.permission==='default'){pn.style.display='flex';}
+  else{pn.style.display='none';}
+  alarmOverlay.classList.add('show');
+}
+
+// frequency buttons
+freqRow.querySelectorAll('.freq').forEach(b=>{
+  b.onclick=()=>{
+    freqRow.querySelectorAll('.freq').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');curFreq=b.dataset.freq;
+    dowField.style.display=(curFreq==='weekly')?'block':'none';
+    domField.style.display=(curFreq==='monthly')?'block':'none';
+    dateField.style.display=(curFreq==='date')?'block':'none';
+    if(curFreq==='date'&&!alarmDate.value){
+      const t=new Date();alarmDate.value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+    }
+  };
+});
+// day-of-week buttons (multi-select)
+dowRow.querySelectorAll('.dow').forEach(b=>{
+  b.onclick=()=>{
+    const d=+b.dataset.d;
+    if(selectedDows.has(d)){selectedDows.delete(d);b.classList.remove('active');}
+    else{selectedDows.add(d);b.classList.add('active');}
+  };
+});
+
+// permission request
+document.getElementById('alarmPermBtn').onclick=()=>{
+  if('Notification' in window){
+    Notification.requestPermission().then(()=>{
+      document.getElementById('alarmPerm').style.display=(Notification.permission==='default')?'flex':'none';
+    });
+  }
+};
+
+// add alarm
+document.getElementById('alarmAdd').onclick=()=>{
+  const msg=alarmMsg.value.trim();
+  if(!msg){alarmMsg.focus();return;}
+  const h=+alarmHour.value, m=+alarmMin.value;
+  const a={id:Date.now()+''+Math.floor(Math.random()*1000),msg,freq:curFreq,h,m,enabled:true,lastFired:null};
+  if(curFreq==='weekly'){
+    if(!selectedDows.size){alert('요일을 하나 이상 선택하세요.');return;}
+    a.dows=[...selectedDows];
+  }
+  if(curFreq==='monthly'){
+    a.dom=Math.min(31,Math.max(1,+alarmDom.value||1));
+  }
+  if(curFreq==='today'||curFreq==='tomorrow'||curFreq==='date'){
+    let d=new Date();
+    if(curFreq==='tomorrow')d.setDate(d.getDate()+1);
+    if(curFreq==='date'){
+      if(!alarmDate.value){alert('날짜를 선택하세요.');return;}
+      const [y,mo,dy]=alarmDate.value.split('-').map(Number);
+      d=new Date(y,mo-1,dy);
+    }
+    a.freq='once';
+    a.date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    // warn if the chosen time today/date already passed
+    const when=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m);
+    if(when.getTime()<Date.now()-60000){
+      if(!confirm('선택한 시각이 이미 지났습니다. 그래도 등록할까요? (지난 시각은 울리지 않습니다)')) return;
+    }
+  }
+  alarms.push(a);saveAlarms();renderAlarmList();
+  // reset input + UI back to 매일
+  alarmMsg.value='';
+  curFreq='daily';
+  freqRow.querySelectorAll('.freq').forEach(x=>x.classList.toggle('active',x.dataset.freq==='daily'));
+  dowField.style.display='none';domField.style.display='none';dateField.style.display='none';
+  selectedDows.clear();dowRow.querySelectorAll('.dow').forEach(x=>x.classList.remove('active'));
+  if('Notification' in window && Notification.permission==='default'){Notification.requestPermission();}
+};
+
+function freqText(a){
+  const t=`${String(a.h).padStart(2,'0')}:${String(a.m).padStart(2,'0')}`;
+  if(a.freq==='daily')return `매일 ${t}`;
+  if(a.freq==='weekly')return `매주 ${a.dows.sort().map(d=>DOW_KR[d]).join('·')} ${t}`;
+  if(a.freq==='monthly')return `매월 ${a.dom}일 ${t}`;
+  if(a.freq==='once'&&a.date){
+    const [y,mo,dy]=a.date.split('-').map(Number);
+    const d=new Date(y,mo-1,dy);
+    const today=new Date();today.setHours(0,0,0,0);
+    const diff=Math.round((d-today)/86400000);
+    let label;
+    if(diff===0)label='오늘';
+    else if(diff===1)label='내일';
+    else label=`${mo}월 ${dy}일 (${DOW_KR[d.getDay()]})`;
+    const done=a.lastFired?' · 완료':'';
+    return `${label} ${t}${done}`;
+  }
+  return t;
+}
+
+function renderAlarmList(){
+  if(!alarms.length){alarmListEl.innerHTML='<div class="alarm-empty">등록된 알림이 없습니다.</div>';return;}
+  alarmListEl.innerHTML='';
+  alarms.forEach(a=>{
+    const row=document.createElement('div');
+    row.className='alarm-item'+(a.enabled?'':' off');
+    row.innerHTML=`
+      <div class="alarm-toggle ${a.enabled?'on':''}" title="켜기/끄기"></div>
+      <div class="ai-when">${esc(freqText(a))}</div>
+      <div class="ai-msg" title="${esc(a.msg)}">${esc(a.msg)}</div>
+      <button class="ai-test" title="지금 테스트 (포스트잇 붙이기)">▶</button>
+      <button class="ai-del" title="삭제">✕</button>
+    `;
+    row.querySelector('.alarm-toggle').onclick=()=>{a.enabled=!a.enabled;saveAlarms();renderAlarmList();};
+    row.querySelector('.ai-test').onclick=()=>{alarmOverlay.classList.remove('show');fireAlarm(a);};
+    row.querySelector('.ai-del').onclick=()=>{alarms=alarms.filter(x=>x.id!==a.id);saveAlarms();renderAlarmList();};
+    alarmListEl.appendChild(row);
+  });
+}
+
+// --- scheduler: check every 30s, fire on matching minute ---
+function alarmShouldFire(a,now){
+  if(!a.enabled)return false;
+  if(now.getHours()!==a.h||now.getMinutes()!==a.m)return false;
+  // prevent duplicate firing within the same minute
+  const stamp=now.getFullYear()+'-'+now.getMonth()+'-'+now.getDate()+'-'+a.h+'-'+a.m;
+  if(a.lastFired===stamp)return false;
+  if(a.freq==='daily')return true;
+  if(a.freq==='weekly')return a.dows&&a.dows.includes(now.getDay());
+  if(a.freq==='monthly'){
+    // handle months shorter than chosen day → fire on last day
+    const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    const target=Math.min(a.dom,last);
+    return now.getDate()===target;
+  }
+  if(a.freq==='once'){
+    if(a.lastFired)return false; // fires only once, ever
+    if(!a.date)return false;
+    const nowDate=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    return nowDate===a.date;
+  }
+  return false;
+}
+function checkAlarms(){
+  const now=new Date();
+  let changed=false;
+  alarms.forEach(a=>{
+    if(alarmShouldFire(a,now)){
+      fireAlarm(a);
+      a.lastFired=now.getFullYear()+'-'+now.getMonth()+'-'+now.getDate()+'-'+a.h+'-'+a.m;
+      changed=true;
+    }
+  });
+  if(changed)saveAlarms();
+}
+function fireAlarm(a){
+  const timeStr=`${String(a.h).padStart(2,'0')}:${String(a.m).padStart(2,'0')}`;
+  // desktop notification if allowed
+  if('Notification' in window && Notification.permission==='granted'){
+    try{new Notification('🔔 ChronoBoard 알림',{body:a.msg});}catch(e){}
+  }
+  // in-app banner (always)
+  showBanner(a.msg,timeStr);
+  // soft chime
+  try{playChime();}catch(e){}
+  // pin a post-it onto the board
+  try{addAlarmPostit(a,timeStr);}catch(e){}
+}
+function addAlarmPostit(a,timeStr){
+  const now=new Date();
+  const stamp=`${now.getMonth()+1}월 ${now.getDate()}일 (${DOW_KR[now.getDay()]}) ${timeStr}`;
+  createCard('alarm', a.msg, stamp, freqText(a));
+}
+function showBanner(msg,timeStr){
+  const b=document.createElement('div');
+  b.className='alarm-banner';
+  b.innerHTML=`
+    <div class="ab-ic">🔔</div>
+    <div class="ab-body">
+      <div class="ab-title">ChronoBoard 알림</div>
+      <div class="ab-msg">${esc(msg)}</div>
+      <div class="ab-time">${timeStr}</div>
+    </div>
+    <button class="ab-close">✕</button>
+  `;
+  const close=()=>{b.style.transition='opacity .3s';b.style.opacity='0';setTimeout(()=>b.remove(),300);};
+  b.querySelector('.ab-close').onclick=close;
+  alarmBannerWrap.appendChild(b);
+  setTimeout(close,12000);
+}
+function playChime(){
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return;
+  const ctx=new AC();
+  [880,1175].forEach((f,i)=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type='sine';o.frequency.value=f;
+    o.connect(g);g.connect(ctx.destination);
+    const t=ctx.currentTime+i*0.18;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.25,t+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+    o.start(t);o.stop(t+0.45);
+  });
+  setTimeout(()=>ctx.close(),1200);
+}
+
+loadAlarms();
+checkAlarms();
+setInterval(checkAlarms,30000);
 </script>
 </body>
 </html>
