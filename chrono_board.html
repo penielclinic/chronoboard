@@ -48,28 +48,38 @@
 
   /* ---------- Toolbar (board head) ---------- */
   .toolbar{
-    display:flex;align-items:center;gap:14px;
-    padding:18px 32px;background:#fff;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:10px;
+    padding:14px 28px;background:#fff;border-bottom:1px solid var(--line);
     z-index:40;
   }
-  .toolbar .hint{margin-left:auto;color:var(--sub);font-size:13px}
+  .tb-group{display:flex;align-items:center;gap:7px}
+  .tb-spacer{flex:1}
+  .tb-divider{width:1px;height:26px;background:var(--line);margin:0 4px}
+  .tb-label{font-size:12px;font-weight:700;color:#b3b8c0;letter-spacing:.3px;margin-right:2px}
   .add-btn{
-    display:flex;align-items:center;gap:9px;
-    border:none;cursor:pointer;font-size:14.5px;font-weight:600;
-    padding:11px 18px;border-radius:12px;color:#1a1a1a;
-    transition:transform .15s ease, box-shadow .15s ease;
-    box-shadow:0 2px 6px rgba(0,0,0,.06);
+    display:flex;align-items:center;gap:8px;
+    border:1px solid var(--line);cursor:pointer;font-size:13.5px;font-weight:650;
+    padding:9px 15px;border-radius:10px;color:#2a2d33;background:#fff;
+    transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
   }
-  .add-btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,.12)}
-  .add-btn .dot{width:13px;height:13px;border-radius:4px}
-  .add-btn.schedule{background:var(--schedule)}
+  .add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.08);border-color:#d3d7df}
+  .add-btn .dot{width:11px;height:11px;border-radius:50%}
   .add-btn.schedule .dot{background:var(--schedule-edge)}
-  .add-btn.memo{background:var(--memo)}
   .add-btn.memo .dot{background:var(--memo-edge)}
-  .add-btn.work{background:var(--work)}
   .add-btn.work .dot{background:var(--work-edge)}
-  .add-btn.file{background:var(--file)}
   .add-btn.file .dot{background:var(--file-edge)}
+  /* generic toolbar action buttons */
+  .tb-btn{
+    border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;
+    font-size:13px;font-weight:650;color:#3a4150;padding:9px 14px;border-radius:10px;
+    transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease, color .14s ease;
+  }
+  .tb-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+  .tb-alarm:hover{color:#7a3fb8;border-color:#cdb4f0}
+  .tb-import:hover{color:#2f6bff;border-color:#aacdf5}
+  .tb-help:hover{color:#1f8a3b;border-color:#aedcb8}
+  .tb-danger{color:#c0392b}
+  .tb-danger:hover{border-color:#f0bcbc;background:#fef6f6}
 
   /* ---------- Search ---------- */
   .search-box{
@@ -89,16 +99,29 @@
 
   /* ---------- Board ---------- */
   .board{
-    position:relative;flex:1;overflow:hidden;
+    position:relative;flex:1;overflow-x:hidden;overflow-y:auto;
     background-color:#f4f5f7;
     background-image:radial-gradient(rgba(0,0,0,.05) 1.1px, transparent 1.1px);
     background-size:22px 22px;
-    padding-right:330px;
   }
+  /* scrollable canvas that grows taller as cards move down */
+  .board-canvas{
+    position:relative;width:100%;min-height:100%;padding-right:330px;
+  }
+  /* clock + frame stay fixed to the board's right side while scrolling */
+  .board-fixed{
+    position:sticky;top:0;height:0;width:100%;z-index:25;overflow:visible;
+  }
+  .board-fixed .clock-widget,.board-fixed .frame{pointer-events:auto}
+  .clock-widget{cursor:grab}
+  .clock-widget.dragging,.frame.dragging{cursor:grabbing;opacity:.96}
+  .frame{cursor:grab}
+  .frame-inner{cursor:default}
 
   /* ---------- Important frame (right side) ---------- */
   .frame{
-    position:absolute;top:200px;right:24px;bottom:24px;width:288px;z-index:20;
+    position:absolute;top:152px;right:18px;width:288px;
+    height:calc(100vh - 152px - 150px - 24px);min-height:240px;z-index:20;
     border-radius:14px;
     background:
       linear-gradient(135deg,#8a6a3a,#c9a86a 18%,#a07d44 50%,#caa96b 82%,#7d5f33);
@@ -136,6 +159,91 @@
   }
   .frame-inner .card .resize,.frame-inner .card .expand{display:none!important}
   .frame-inner .card .pin{display:block}
+
+  /* ---------- Mini clinic schedule board ---------- */
+  .clinic{
+    position:absolute;left:24px;top:200px;width:330px;z-index:22;cursor:grab;
+    background:linear-gradient(160deg,#ffffff,#f7fbff);
+    border-radius:16px;border:1px solid #dbe6f5;
+    box-shadow:0 16px 40px rgba(30,60,120,.16);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .clinic.dragging{cursor:grabbing;opacity:.97}
+  .clinic-head{
+    background:linear-gradient(135deg,#2f6bff,#5b8dff);color:#fff;padding:13px 16px;
+    display:flex;align-items:center;gap:9px;
+  }
+  .clinic-head .ch-ic{font-size:18px}
+  .clinic-head input.ch-title{
+    flex:1;min-width:0;border:none;background:transparent;color:#fff;font-size:15.5px;font-weight:800;
+    font-family:inherit;letter-spacing:-.3px;text-overflow:ellipsis;
+  }
+  .clinic-head input.ch-title::placeholder{color:rgba(255,255,255,.7)}
+  .clinic-head input.ch-title:focus{outline:none}
+  .clinic-head .ch-date{font-size:11px;font-weight:600;opacity:.85;white-space:nowrap}
+  .clinic-head .ch-min{
+    flex:0 0 auto;border:1px solid rgba(255,255,255,.6);background:#fff;color:#2f6bff;cursor:pointer;
+    height:26px;padding:0 10px;border-radius:8px;font-size:12px;font-weight:800;line-height:1;
+    display:flex;align-items:center;gap:5px;white-space:nowrap;transition:background .15s,transform .12s;
+    box-shadow:0 2px 6px rgba(0,0,0,.18);
+  }
+  .clinic-head .ch-min:hover{background:#eaf0ff;transform:translateY(-1px)}
+  .clinic-head .ch-min .mi{font-size:13px}
+  .clinic.collapsed .clinic-body,.clinic.collapsed .clinic-foot{display:none}
+  .clinic.collapsed{width:280px}
+  .clinic.collapsed .ch-date{display:none}
+  .clinic.collapsed .ch-min{background:#ffd24a;color:#5a4500;border-color:#ffd24a}
+  .clinic.collapsed .ch-min:hover{background:#ffc41f}
+  .clinic-body{padding:10px 12px 14px;max-height:60vh;overflow-y:auto}
+  .clinic-row{margin-bottom:9px;border-radius:11px;padding:9px 10px;background:#fff;border:1px solid #e9eef6}
+  .clinic-row .cr-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .clinic-row .cr-badge{
+    font-size:11.5px;font-weight:800;color:#fff;padding:3px 9px;border-radius:7px;white-space:nowrap;flex:none;
+  }
+  .clinic-row .cr-add{
+    margin-left:auto;border:1px solid #cfd9e8;background:#f4f8ff;color:#2f6bff;font-weight:700;
+    font-size:11.5px;padding:3px 9px;border-radius:7px;cursor:pointer;font-family:inherit;
+  }
+  .clinic-row .cr-add:hover{background:#2f6bff;color:#fff;border-color:#2f6bff}
+  .cr-lines{display:flex;flex-direction:column;gap:6px}
+  .cr-line{display:flex;align-items:flex-start;gap:6px}
+  .cr-line .cr-time{
+    width:78px;flex:none;border:1px solid #e2e7ef;border-radius:7px;padding:5px 7px;font-size:12.5px;font-family:inherit;color:#333;
+  }
+  .cr-line .cr-time:focus{outline:none;border-color:#2f6bff}
+  .cr-line textarea.cr-content{
+    flex:1;width:100%;border:1px solid #e2e7ef;border-radius:7px;padding:6px 8px;font-size:13px;font-family:inherit;
+    color:#1a1a1a;resize:vertical;min-height:32px;line-height:1.45;
+  }
+  .cr-line textarea.cr-content:focus{outline:none;border-color:#2f6bff}
+  .cr-line textarea.cr-content::placeholder{color:#aab2bd}
+  .cr-line .cr-del{
+    flex:none;border:none;background:#f1f2f5;color:#aaa;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;
+  }
+  .cr-line .cr-del:hover{background:#ffe0e0;color:#c0392b}
+  /* badge colors per category */
+  .cat-sangdam .cr-badge{background:#2f9e6e}
+  .cat-surgery .cr-badge{background:#d9534f}
+  .cat-dx      .cr-badge{background:#7a5af0}
+  .cat-exercise .cr-badge{background:#e08e0b}
+  .cat-general .cr-badge{background:#2f6bff}
+  .cat-etc     .cr-badge{background:#888f9a}
+  .cat-tmr     .cr-badge{background:#0f9da6}
+  .cat-tmr{background:#f3fbfc;border-color:#cdeef0}
+  .clinic-sep{
+    text-align:center;font-size:11px;font-weight:800;letter-spacing:1px;color:#9aa3b0;
+    margin:4px 0 9px;
+  }
+  .clinic-foot{display:flex;gap:8px;padding:0 12px 12px}
+  .clinic-foot button{
+    flex:1;border:none;border-radius:9px;padding:9px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .clinic-foot .cf-copy{background:#eef3ff;color:#2f6bff}
+  .clinic-foot .cf-copy:hover{background:#dde8ff}
+  .clinic-foot .cf-pin{background:#2f6bff;color:#fff}
+  .clinic-foot .cf-pin:hover{background:#2257e0}
+  .clinic-foot .cf-reset{background:#fdecec;color:#c0392b;flex:0 0 auto;min-width:78px}
+  .clinic-foot .cf-reset:hover{background:#f7d9d9}
 
   .empty{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
@@ -205,11 +313,13 @@
 
   /* expand button on work card */
   .card .expand{
-    position:absolute;top:8px;right:92px;width:22px;height:22px;border:none;border-radius:6px;
-    cursor:pointer;background:rgba(255,255,255,.7);display:none;place-items:center;color:#444;font-size:12px;
+    position:absolute;top:7px;right:108px;width:28px;height:28px;border:none;border-radius:8px;
+    cursor:pointer;background:rgba(255,255,255,.82);display:none;place-items:center;color:#444;font-size:14px;
+    box-shadow:0 1px 3px rgba(0,0,0,.12);transition:background .12s, transform .12s;
   }
   .card.work .expand{display:grid}
   .card:hover .expand{background:#fff}
+  .card .expand:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.18)}
 
   /* ---------- Fullscreen workspace ---------- */
   .ws-overlay{
@@ -262,6 +372,28 @@
     color:#9aa39a;font-size:14px;pointer-events:none;
   }
 
+  /* ---------- Workspace pager ---------- */
+  .ws-pager{
+    flex:none;display:flex;align-items:center;gap:10px;padding:12px 22px;
+    background:rgba(255,255,255,.6);border-top:1px solid rgba(0,0,0,.07);
+  }
+  .ws-pager .wp-btn{
+    border:1.5px solid #cdd6e4;background:#fff;cursor:pointer;font-family:inherit;
+    font-size:13px;font-weight:700;color:#3a4150;padding:9px 15px;border-radius:10px;transition:all .15s;
+  }
+  .ws-pager .wp-btn:hover{border-color:#2f6bff;color:#2f6bff;transform:translateY(-1px)}
+  .ws-pager .wp-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;border-color:#cdd6e4;color:#3a4150}
+  .ws-pager .wp-add{background:#2f6bff;border-color:#2f6bff;color:#fff}
+  .ws-pager .wp-add:hover{background:#2257e0;color:#fff;border-color:#2257e0}
+  .ws-pager .wp-del{margin-left:auto;background:#fdecec;border-color:#f3c2c2;color:#c0392b}
+  .ws-pager .wp-del:hover{background:#f7d9d9;border-color:#e8a0a0;color:#c0392b}
+  .ws-pager .wp-indicator{
+    font-size:16px;font-weight:900;letter-spacing:.3px;color:#1a1a1a;
+    background:#fff;border:2px solid #2f6bff;border-radius:12px;padding:7px 18px;
+    min-width:120px;text-align:center;box-shadow:0 3px 10px rgba(47,107,255,.18);
+  }
+  .ws-pager .wp-indicator b{color:#2f6bff;font-size:18px}
+
   /* pin */
   .pin{
     position:absolute;top:-11px;left:50%;transform:translateX(-50%);
@@ -288,15 +420,17 @@
 
   /* card controls */
   .card .ctrl{
-    position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transition:opacity .15s;
+    position:absolute;top:7px;right:7px;display:flex;gap:5px;opacity:0;transition:opacity .15s;
   }
   .card:hover .ctrl{opacity:1}
   .card .ctrl button{
-    width:22px;height:22px;border:none;border-radius:6px;cursor:pointer;
-    background:rgba(255,255,255,.7);font-size:12px;line-height:1;color:#444;
-    display:grid;place-items:center;
+    width:28px;height:28px;border:none;border-radius:8px;cursor:pointer;
+    background:rgba(255,255,255,.82);font-size:14px;line-height:1;color:#444;
+    display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12);
+    transition:background .12s, transform .12s;
   }
-  .card .ctrl button:hover{background:#fff}
+  .card .ctrl button:hover{background:#fff;transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.18)}
+  .card .ctrl button:active{transform:translateY(0)}
   .card .ctrl button.copied{background:#16a34a;color:#fff}
   .card .ctrl button.star-btn.on{background:#ffd24a;color:#7a5a00}
   .frame-inner .card .ctrl{opacity:1}
@@ -339,6 +473,75 @@
   .btn:hover{transform:translateY(-1px)}
   .btn.ghost{background:#f1f2f5;color:#555}
   .btn.primary{background:var(--blue);color:#fff;box-shadow:0 6px 16px rgba(47,107,255,.35)}
+
+  /* ---------- Import choice cards ---------- */
+  .import-choice{
+    display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;
+    border:1.5px solid var(--line);background:#fff;border-radius:14px;
+    padding:15px 16px;margin-bottom:11px;cursor:pointer;font-family:inherit;
+    transition:border-color .15s, box-shadow .15s, transform .12s, background .15s;
+  }
+  .import-choice:hover{border-color:var(--blue);background:#f6f9ff;transform:translateY(-1px);box-shadow:0 8px 20px rgba(47,107,255,.14)}
+  .import-choice .ic-emoji{font-size:24px;line-height:1;flex:none;margin-top:1px}
+  .import-choice .ic-title{font-size:15px;font-weight:800;color:#1a1a1a;letter-spacing:-.2px}
+  .import-choice .ic-desc{font-size:12.5px;color:#7b818b;margin-top:3px;line-height:1.5}
+
+  /* ---------- Help / user guide ---------- */
+  .help-modal{width:760px;max-width:95vw}
+  .help-content{max-height:74vh;overflow-y:auto;padding-right:6px}
+  .help-hero{
+    background:linear-gradient(135deg,#2f6bff,#1f8a3b);color:#fff;border-radius:14px;
+    padding:18px 20px;margin-bottom:18px;
+  }
+  .help-hero-title{font-size:16px;font-weight:800;line-height:1.5;letter-spacing:-.2px}
+  .help-hero-sub{font-size:12.5px;opacity:.92;margin-top:7px}
+  .help-sec{
+    background:var(--bg);border:1px solid color-mix(in srgb, var(--c) 22%, #fff);
+    border-left:5px solid var(--c);border-radius:13px;padding:15px 17px;margin-bottom:14px;
+  }
+  .help-sec-h{font-size:14.5px;font-weight:800;color:var(--c);margin-bottom:11px;letter-spacing:-.2px}
+  .help-star{box-shadow:0 6px 20px color-mix(in srgb, var(--c) 18%, transparent)}
+  .help-p{font-size:13px;color:#3c4250;line-height:1.65;margin:0}
+  .help-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .help-card{
+    background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.05);border-radius:10px;
+    padding:10px 12px;display:flex;flex-direction:column;gap:3px;
+  }
+  .help-card b{font-size:12.8px;color:#222}
+  .help-card span{font-size:12px;color:#5e6675;line-height:1.5}
+  .help-flow{display:flex;flex-direction:column;gap:11px}
+  .help-flow-item{display:flex;gap:13px;align-items:flex-start;background:rgba(255,255,255,.8);border-radius:11px;padding:12px 14px}
+  .hf-num{flex:none;color:#fff;font-size:11.5px;font-weight:800;padding:5px 11px;border-radius:20px;margin-top:2px}
+  .help-flow-item b{font-size:13.5px;color:#1a1a1a}
+  .help-flow-item span{font-size:12.5px;color:#4a5160;line-height:1.6}
+  .help-note{
+    margin-top:11px;background:rgba(255,255,255,.9);border:1px dashed color-mix(in srgb, var(--c) 45%, #fff);
+    border-radius:9px;padding:9px 12px;font-size:12px;color:#444;line-height:1.5;
+  }
+  .help-steps{list-style:none;margin:4px 0 0;padding:0;counter-reset:none}
+  .help-steps li{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed rgba(192,57,43,.18)}
+  .help-steps li:last-child{border-bottom:none}
+  .hs-n{
+    flex:none;width:24px;height:24px;border-radius:50%;background:var(--c);color:#fff;
+    font-size:12.5px;font-weight:800;display:grid;place-items:center;margin-top:1px;
+  }
+  .help-steps li div{font-size:13px;color:#3c4250;line-height:1.6}
+  .hs-warn{display:inline-block;margin-top:3px;color:#c0392b;font-weight:700;font-size:12px}
+  .help-code-label{margin:14px 0 6px;font-size:12.5px;font-weight:800;color:var(--c)}
+  .help-copy-btn{
+    border:1px solid color-mix(in srgb, var(--c) 40%, #fff);background:#fff;color:var(--c);
+    cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;
+    transition:background .14s, transform .12s;white-space:nowrap;
+  }
+  .help-copy-btn:hover{background:color-mix(in srgb, var(--c) 10%, #fff);transform:translateY(-1px)}
+  .help-copy-btn.done{background:#16a34a;border-color:#16a34a;color:#fff}
+  .help-code{
+    background:#1b2030;color:#e7ecf5;border-radius:11px;padding:14px 15px;margin:0;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.55;
+    overflow-x:auto;white-space:pre;
+  }
+  code{background:rgba(0,0,0,.07);padding:1px 6px;border-radius:5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em}
+  @media(max-width:560px){.help-grid{grid-template-columns:1fr}}
 
   /* ---------- Alarm modal ---------- */
   .alarm-modal{width:540px;max-width:94vw}
@@ -398,26 +601,23 @@
   .sort-group{display:flex;align-items:center;gap:8px;margin-left:14px;padding-left:14px;border-left:1px solid var(--line)}
   .sort-group .lbl{font-size:12px;color:var(--sub);font-weight:600;letter-spacing:.2px}
   .sort-btn{
-    border:1.5px solid var(--line);background:#fff;cursor:pointer;
-    font-size:13px;font-weight:600;color:#555;padding:8px 14px;border-radius:10px;
-    transition:all .15s;
+    border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;
+    font-size:13px;font-weight:650;color:#3a4150;padding:9px 14px;border-radius:10px;
+    transition:transform .14s ease, box-shadow .14s ease, border-color .14s, color .14s, background .14s;
   }
-  .sort-btn:hover{border-color:var(--blue);color:var(--blue)}
+  .sort-btn:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
   .sort-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(47,107,255,.28)}
 
   /* ---------- Clock widget ---------- */
   .clock-widget{
-    position:absolute;top:24px;right:24px;z-index:30;
-    width:288px;background:rgba(255,255,255,.88);backdrop-filter:blur(8px);
-    border-radius:18px;padding:14px 16px 12px;
-    box-shadow:0 12px 32px rgba(0,0,0,.13);border:1px solid rgba(255,255,255,.7);
-    text-align:center;display:flex;align-items:center;justify-content:center;gap:16px;
+    position:absolute;top:18px;right:18px;z-index:30;
+    background:rgba(255,255,255,.88);backdrop-filter:blur(8px);
+    border-radius:50%;padding:9px;
+    box-shadow:0 8px 22px rgba(0,0,0,.13);border:1px solid rgba(255,255,255,.7);
+    display:flex;align-items:center;justify-content:center;
   }
-  .clock-widget .clock-info{text-align:left}
-  .clock-face{position:relative;width:106px;height:106px;margin:0 auto}
-  .clock-face svg{display:block}
-  .clock-digital{margin-top:10px;font-size:19px;font-weight:700;letter-spacing:.5px;color:#1a1a1a;font-variant-numeric:tabular-nums}
-  .clock-date{font-size:11.5px;color:var(--sub);font-weight:600;margin-top:2px}
+  .clock-face{position:relative;width:74px;height:74px}
+  .clock-face svg{display:block;width:100%;height:100%}
   .hand{transform-origin:53px 53px;transition:transform .15s cubic-bezier(.4,2.1,.6,1)}
 </style>
 </head>
@@ -453,59 +653,85 @@
 </header>
 
 <div class="toolbar">
-  <button class="add-btn schedule" data-type="schedule"><span class="dot"></span>일정 추가</button>
-  <button class="add-btn memo" data-type="memo"><span class="dot"></span>메모 추가</button>
-  <button class="add-btn work" data-type="work"><span class="dot"></span>작업공간 추가</button>
-  <button class="add-btn file" data-type="file"><span class="dot"></span>파일 추가</button>
-  <div class="sort-group">
-    <span class="lbl">정렬</span>
+  <div class="tb-group tb-add">
+    <span class="tb-label">추가</span>
+    <button class="add-btn schedule" data-type="schedule"><span class="dot"></span>일정</button>
+    <button class="add-btn memo" data-type="memo"><span class="dot"></span>메모</button>
+    <button class="add-btn work" data-type="work"><span class="dot"></span>작업공간</button>
+    <button class="add-btn file" data-type="file"><span class="dot"></span>파일</button>
+  </div>
+  <div class="tb-divider"></div>
+  <div class="tb-group">
+    <span class="tb-label">정렬</span>
     <button class="sort-btn" data-sort="created">만든 순서</button>
     <button class="sort-btn" data-sort="type">종류별</button>
   </div>
-  <span class="hint">정렬 버튼으로 포스트잇을 깔끔하게 정돈하세요 · 카드는 드래그로 이동, 우측 하단에서 크기 조절</span>
+  <div class="tb-spacer"></div>
   <span class="storage-status" id="storageStatus" title="변경사항은 이 브라우저에 자동 저장됩니다"></span>
-  <button class="sort-btn" id="alarmBtn" style="border-color:#cdb4f0;color:#7a3fb8">🔔 알림</button>
-  <button class="sort-btn" id="clearAllBtn" style="border-color:#f3c2c2;color:#c0392b">전체 비우기</button>
+  <div class="tb-divider"></div>
+  <div class="tb-group">
+    <button class="tb-btn tb-alarm" id="alarmBtn">🔔 알림</button>
+    <button class="tb-btn tb-import" id="sheetImportTop">📥 시트 불러오기</button>
+    <button class="tb-btn tb-help" id="helpBtn">📖 사용설명서</button>
+    <button class="tb-btn tb-danger" id="clearAllBtn">전체 비우기</button>
+  </div>
 </div>
 
 <div class="board" id="board">
-  <div class="clock-widget">
-    <div class="clock-face">
-      <svg viewBox="0 0 106 106" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="cg" cx="42%" cy="38%" r="70%">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="100%" stop-color="#eef0f4"/>
-          </radialGradient>
-        </defs>
-        <circle cx="53" cy="53" r="50" fill="url(#cg)" stroke="#e2e4ea" stroke-width="2"/>
-        <g id="ticks"></g>
-        <line id="hHour" class="hand" x1="53" y1="53" x2="53" y2="30" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
-        <line id="hMin" class="hand" x1="53" y1="53" x2="53" y2="20" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
-        <line id="hSec" class="hand" x1="53" y1="57" x2="53" y2="16" stroke="#2f6bff" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="53" cy="53" r="4" fill="#2f6bff"/>
-        <circle cx="53" cy="53" r="1.6" fill="#fff"/>
-      </svg>
+  <div class="board-fixed">
+    <div class="clock-widget" id="clockWidget">
+      <div class="clock-face">
+        <svg viewBox="0 0 106 106" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="cg" cx="42%" cy="38%" r="70%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#eef0f4"/>
+            </radialGradient>
+          </defs>
+          <circle cx="53" cy="53" r="50" fill="url(#cg)" stroke="#e2e4ea" stroke-width="2"/>
+          <g id="ticks"></g>
+          <line id="hHour" class="hand" x1="53" y1="53" x2="53" y2="30" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+          <line id="hMin" class="hand" x1="53" y1="53" x2="53" y2="20" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+          <line id="hSec" class="hand" x1="53" y1="57" x2="53" y2="16" stroke="#2f6bff" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="53" cy="53" r="4" fill="#2f6bff"/>
+          <circle cx="53" cy="53" r="1.6" fill="#fff"/>
+        </svg>
+      </div>
     </div>
-    <div class="clock-info">
-      <div class="clock-digital" id="digital">--:--</div>
-      <div class="clock-date" id="dateline">—</div>
-    </div>
-  </div>
 
-  <!-- Important frame -->
-  <div class="frame" id="frame">
-    <div class="frame-title">⭐ 중요</div>
-    <div class="frame-inner" id="frameInner">
-      <div class="frame-empty" id="frameEmpty">
-        <div class="ic">📌</div>
-        <div>중요한 일정·메모·작업공간을<br>여기로 끌어다 놓으세요</div>
+    <!-- Important frame -->
+    <div class="frame" id="frame">
+      <div class="frame-title">⭐ 중요</div>
+      <div class="frame-inner" id="frameInner">
+        <div class="frame-empty" id="frameEmpty">
+          <div class="ic">📌</div>
+          <div>중요한 일정·메모·작업공간을<br>여기로 끌어다 놓으세요</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini clinic schedule board -->
+    <div class="clinic" id="clinic">
+      <div class="clinic-head">
+        <span class="ch-ic">🏥</span>
+        <input class="ch-title" id="clinicTitle" value="오늘 병원 일정" placeholder="제목">
+        <span class="ch-date" id="clinicDate">—</span>
+        <button class="ch-min" id="clinicMin" title="최소화 / 펼치기"><span class="mi">▾</span><span class="ml">최소화</span></button>
+      </div>
+      <div class="clinic-body" id="clinicBody"></div>
+      <div class="clinic-foot">
+        <button class="cf-copy" id="clinicCopy">⧉ 복사</button>
+        <button class="cf-pin" id="clinicPin">📌 보드에 붙이기</button>
+        <button class="cf-reset" id="clinicReset" title="모든 내용 비우기">↺ 초기화</button>
       </div>
     </div>
   </div>
-  <div class="empty" id="empty">
-    <h2>보드가 비어 있어요</h2>
-    <p>위에서 일정·메모·작업공간을 추가해 보세요</p>
+
+  <div class="board-canvas" id="boardCanvas">
+    <div class="empty" id="empty">
+      <h2>보드가 비어 있어요</h2>
+      <p>위에서 일정·메모·작업공간을 추가해 보세요</p>
+    </div>
   </div>
 </div>
 
@@ -524,7 +750,7 @@
       </div>
       <div class="field" id="fileField" style="display:none">
         <label>파일 (그림 / 문서 등)</label>
-        <input type="file" id="inFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.hwp,.zip">
+        <input type="file" id="inFile" accept="image/*,.html,.htm,.md,.markdown,.txt,.csv,.json,.js,.ts,.css,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.zip">
       </div>
       <div class="field">
         <label id="lblBody">내용</label>
@@ -548,6 +774,8 @@
         <button data-wstype="schedule"><span class="wsdot" style="background:var(--schedule-edge)"></span>일정</button>
         <button data-wstype="memo"><span class="wsdot" style="background:var(--memo-edge)"></span>메모</button>
         <button data-wstype="file"><span class="wsdot" style="background:var(--file-edge)"></span>파일</button>
+        <button id="wsSendSheet" style="background:#e8f7ec;border-color:#bfe5c8;color:#1f8a3b">📊 시트로 전송</button>
+        <button id="wsSheetCfg" style="background:#eef6ef;border-color:#cfe3d2;color:#1f8a3b" title="구글 시트 연동 설정">⚙</button>
       </div>
       <button class="ws-close" id="wsClose">✕</button>
     </div>
@@ -558,6 +786,13 @@
       <div class="ws-canvas" id="wsCanvas">
         <div class="empty-mini">우측 상단 버튼으로 일정·메모·파일을 붙여보세요</div>
       </div>
+    </div>
+    <div class="ws-pager">
+      <button class="wp-btn" id="wsPrev" title="이전 페이지">◀ 이전</button>
+      <div class="wp-indicator" id="wsPageInd">페이지 1 / 1</div>
+      <button class="wp-btn" id="wsNext" title="다음 페이지">다음 ▶</button>
+      <button class="wp-btn wp-add" id="wsAddPage" title="새 페이지 추가">＋ 새 페이지</button>
+      <button class="wp-btn wp-del" id="wsDelPage" title="현재 페이지 삭제">🗑 페이지 삭제</button>
     </div>
   </div>
 </div>
@@ -645,8 +880,187 @@
 <!-- Alarm banners -->
 <div class="alarm-banner-wrap" id="alarmBannerWrap"></div>
 
+<!-- Google Sheet sync modal -->
+<div class="overlay" id="sheetOverlay">
+  <div class="modal" style="width:600px;max-width:94vw">
+    <div class="head"><span class="swatch" style="background:#1f8a3b"></span><h3>📊 구글 시트 연동</h3></div>
+    <div class="content" style="max-height:64vh;overflow-y:auto">
+      <div style="font-size:13.5px;line-height:1.6;color:#333;background:#f3faf4;border:1px solid #cfe9d4;border-radius:11px;padding:14px 16px;margin-bottom:16px">
+        일정·메모는 만들면 <b>자동으로</b>, 작업공간은 <b>전송 버튼</b>을 눌렀을 때 구글 시트에 쌓입니다.<br>
+        구글 시트에 스크립트를 한 번 붙여넣고 받은 <b>웹앱 주소</b>만 아래 칸에 넣으면 끝납니다.
+      </div>
+
+      <div class="field">
+        <label style="font-size:13px;font-weight:700;color:#1f8a3b">웹앱 주소 (Apps Script URL)</label>
+        <input type="text" id="sheetWebappUrl" placeholder="https://script.google.com/macros/s/..../exec">
+        <div style="font-size:11.5px;color:#888;margin-top:5px">구글 앱스 스크립트 “배포”에서 받은 /exec 로 끝나는 주소입니다.</div>
+      </div>
+
+      <div style="font-size:12.5px;color:#555;background:#fafafb;border:1px solid var(--line);border-radius:11px;padding:12px 14px">
+        <b>전송 상태</b><div id="sheetStatus" style="margin-top:5px;color:#888">아직 연동되지 않았습니다.</div>
+        <button class="btn ghost" id="sheetTest" style="margin-top:9px;font-size:12.5px;padding:8px 12px">✉️ 테스트 전송</button>
+      </div>
+
+      <div style="font-size:12.5px;color:#555;background:#eef6ff;border:1px solid #cfe0f5;border-radius:11px;padding:12px 14px;margin-top:12px">
+        <b>📥 시트에서 불러오기</b>
+        <div style="margin-top:4px;color:#666">집에서도 병원에서 적은 일정·메모를 보드로 가져옵니다. 시트에 쌓인 일정·메모가 카드로 추가됩니다.</div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><input type="checkbox" id="sheetImportReplace"> 불러오기 전에 기존 카드 비우기</label>
+        </div>
+        <button class="btn ghost" id="sheetImport" style="margin-top:8px;font-size:12.5px;padding:8px 12px;color:#2f6bff">📥 시트에서 불러오기</button>
+        <div id="sheetImportStatus" style="margin-top:6px;color:#888;font-size:11.5px"></div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" id="sheetCancel">닫기</button>
+      <button class="btn primary" id="sheetSave" style="background:#1f8a3b;box-shadow:0 6px 16px rgba(31,138,59,.32)">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import choice modal -->
+<div class="overlay" id="importChoiceOverlay">
+  <div class="modal" style="width:440px;max-width:92vw">
+    <div class="head"><span class="swatch" style="background:#2f6bff"></span><h3>📥 시트에서 불러오기</h3></div>
+    <div class="content">
+      <p style="font-size:13.5px;color:#666;margin:0 0 16px;line-height:1.6">시트에 쌓인 일정·메모를 보드로 가져옵니다.<br>불러오는 방식을 선택하세요.</p>
+      <button class="import-choice" data-replace="false">
+        <div class="ic-emoji">➕</div>
+        <div class="ic-text">
+          <div class="ic-title">추가로 불러오기</div>
+          <div class="ic-desc">지금 보드의 카드는 그대로 두고, 시트 내용을 더합니다.</div>
+        </div>
+      </button>
+      <button class="import-choice" data-replace="true">
+        <div class="ic-emoji">🔄</div>
+        <div class="ic-text">
+          <div class="ic-title">새로 불러오기</div>
+          <div class="ic-desc">지금 보드의 카드를 모두 비우고, 시트 내용만 깨끗하게 가져옵니다.</div>
+        </div>
+      </button>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" id="importChoiceCancel">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help / User guide modal -->
+<div class="overlay" id="helpOverlay">
+  <div class="modal help-modal">
+    <div class="head"><span class="swatch" style="background:linear-gradient(135deg,#2f6bff,#1f8a3b)"></span><h3>📖 ChronoBoard 사용설명서</h3></div>
+    <div class="content help-content">
+
+      <div class="help-hero">
+        <div class="help-hero-title">코르크보드 위에 일정·메모·작업공간을 붙이고, 구글 시트로 어디서나 함께 보세요.</div>
+        <div class="help-hero-sub">아래에서 ⭐ 표시된 <b>구글 시트 연동</b> 부분을 특히 자세히 정리했습니다.</div>
+      </div>
+
+      <!-- 기본 사용 -->
+      <div class="help-sec" style="--c:#c79a00;--bg:#fff8e1">
+        <div class="help-sec-h">🧷 기본 사용법</div>
+        <div class="help-grid">
+          <div class="help-card"><b>➕ 추가</b><span>상단 ‘추가’에서 일정·메모·작업공간·파일 카드를 보드에 붙입니다.</span></div>
+          <div class="help-card"><b>🖱️ 이동·크기</b><span>카드를 끌어 옮기고, 오른쪽 아래 모서리를 잡아 크기를 바꿉니다.</span></div>
+          <div class="help-card"><b>⭐ 중요</b><span>카드의 ☆를 누르면 오른쪽 ‘중요’ 액자에 보관됩니다.</span></div>
+          <div class="help-card"><b>⧉ 복사 / ✕ 삭제</b><span>카드 위 단추로 내용을 복사하거나 카드를 지웁니다.</span></div>
+          <div class="help-card"><b>↕ 정렬</b><span>‘만든 순서 / 종류별’로 카드를 깔끔히 정돈합니다.</span></div>
+          <div class="help-card"><b>🔍 검색</b><span>오른쪽 위 검색창으로 카드 내용을 찾습니다.</span></div>
+        </div>
+      </div>
+
+      <!-- 작업공간/병원판/알림 -->
+      <div class="help-sec" style="--c:#1f8a3b;--bg:#eefaf0">
+        <div class="help-sec-h">🗂️ 작업공간 · 🏥 병원 일정판 · 🔔 알림</div>
+        <div class="help-grid">
+          <div class="help-card"><b>작업공간</b><span>카드의 ⤢로 크게 열어 글과 항목을 정리하고, 여러 ‘페이지’로 이어 씁니다.</span></div>
+          <div class="help-card"><b>병원 일정판</b><span>상담·수술 등 여러 명을 ‘＋ 추가’로 적고, ↺ 초기화로 다음 날 새로 시작합니다. ▾로 최소화됩니다.</span></div>
+          <div class="help-card"><b>알림</b><span>매일·매주·매월·특정일로 알림을 등록하면 시각에 포스트잇과 알림이 뜹니다.</span></div>
+        </div>
+      </div>
+
+      <!-- 데이터 저장 -->
+      <div class="help-sec" style="--c:#7a3fb8;--bg:#f3eefb">
+        <div class="help-sec-h">💾 데이터는 어디에 저장되나요?</div>
+        <p class="help-p">모든 카드는 <b>이 브라우저 안</b>에 자동 저장됩니다(같은 기기·같은 브라우저에서 유지). 상단의 용량 표시로 사용량을 볼 수 있습니다. 다른 기기(집↔병원)에서 함께 보려면 아래 <b>구글 시트 연동</b>을 쓰세요.</p>
+      </div>
+
+      <!-- ⭐ 시트 연동 핵심 -->
+      <div class="help-sec help-star" style="--c:#1f8a3b;--bg:#e9f8ee">
+        <div class="help-sec-h">⭐ 구글 시트 연동 — 자동저장 &amp; 가져오기</div>
+
+        <div class="help-flow">
+          <div class="help-flow-item"><div class="hf-num" style="background:#1f8a3b">자동</div><div><b>📊 시트 자동저장</b><br><span>연동해두면 <b>일정·메모</b>를 만들 때마다 구글 시트에 자동으로 한 줄씩 쌓입니다. <b>작업공간</b>은 크게 연 화면의 <b>📊 시트로 전송</b> 버튼을 누를 때 보냅니다. 시트에는 <b>시각·종류·제목·내용</b> 순으로 기록됩니다.</span></div></div>
+          <div class="help-flow-item"><div class="hf-num" style="background:#2f6bff">가져옴</div><div><b>📥 시트 불러오기</b><br><span>상단 <b>📥 시트 불러오기</b>를 누르면 시트에 쌓인 내용을 보드로 가져옵니다. ‘추가로 불러오기’(지금 카드 유지)와 ‘새로 불러오기’(보드 비우고 새로) 중 선택합니다. 집에서도 같은 시트 주소만 넣으면 병원 메모를 그대로 봅니다.</span></div></div>
+        </div>
+        <div class="help-note">💡 사진·파일 첨부는 시트로 오가지 않고, <b>글(텍스트)</b>만 동기화됩니다.</div>
+      </div>
+
+      <!-- ⭐ 세팅 방법 -->
+      <div class="help-sec help-star" style="--c:#c0392b;--bg:#fdeeee">
+        <div class="help-sec-h">⭐ 세팅 방법 (처음 한 번만)</div>
+        <p class="help-p" style="margin-top:0">코딩은 필요 없습니다. 아래 순서대로 따라 하시면 됩니다. <b>컴퓨터(PC)</b>에서 하시는 걸 권합니다.</p>
+
+        <ol class="help-steps">
+          <li><span class="hs-n">1</span><div><b>빈 구글 시트 만들기</b> — <code>sheets.google.com</code> → ＋(빈 스프레드시트). 머리글은 안 적어도 됩니다(자동 생성).</div></li>
+          <li><span class="hs-n">2</span><div><b>스크립트 편집기 열기</b> — 시트 메뉴 <b>확장 프로그램 → Apps Script</b>.</div></li>
+          <li><span class="hs-n">3</span><div><b>코드 붙여넣기</b> — 기존 내용을 모두 지우고, 아래 <b>‘쓰기(doPost)’와 ‘읽기(doGet)’ 코드</b>를 함께 붙여넣습니다. <code>시트ID</code> 부분만 본인 시트 주소(<code>/d/</code>와 <code>/edit</code> 사이 글자)로 바꾸세요. → 💾 저장.</div></li>
+          <li><span class="hs-n">4</span><div><b>웹앱으로 배포</b> — 오른쪽 위 <b>배포 → 새 배포 → 유형: 웹 앱</b>. <b>액세스 권한 = ‘모든 사용자(Anyone)’</b> 로 꼭 바꾸고 <b>배포</b>. <span class="hs-warn">★ ‘모든 사용자’가 아니면 저장이 안 됩니다.</span></div></li>
+          <li><span class="hs-n">5</span><div><b>권한 허용</b>(처음 한 번) — 계정 선택 → ‘고급’ → ‘…(안전하지 않음)으로 이동’ → <b>허용</b>.</div></li>
+          <li><span class="hs-n">6</span><div><b>주소 복사</b> — <code>…/exec</code> 로 끝나는 <b>웹앱 URL</b>을 복사합니다.</div></li>
+          <li><span class="hs-n">7</span><div><b>ChronoBoard에 붙여넣기</b> — 작업공간을 크게 열고 <b>⚙</b> → 주소 붙여넣기 → <b>✉️ 테스트 전송</b> → 시트에 ‘테스트’ 줄 확인 → <b>저장</b>.</div></li>
+        </ol>
+
+        <div class="help-code-label" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <span>📋 붙여넣을 코드 (쓰기 + 읽기)</span>
+          <button class="help-copy-btn" id="helpCopyCode">⧉ 코드 복사</button>
+        </div>
+        <pre class="help-code" id="helpCodeBlock">function doPost(e) {
+  var ss = SpreadsheetApp.openById('시트ID');
+  var sheet = ss.getSheets()[0];
+  if (sheet.getLastRow() === 0)
+    sheet.appendRow(['시각','종류','제목','내용']);
+  var d = {};
+  if (e &amp;&amp; e.postData &amp;&amp; e.postData.contents)
+    d = JSON.parse(e.postData.contents);
+  sheet.appendRow([new Date(), d.kind||'', d.title||'', d.content||'']);
+  return ContentService.createTextOutput(
+    JSON.stringify({result:'ok'})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var ss = SpreadsheetApp.openById('시트ID');
+  var v = ss.getSheets()[0].getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i &lt; v.length; i++)
+    rows.push({ time: v[i][0] ? new Date(v[i][0]).toLocaleString() : '',
+                kind: v[i][1]||'', title: v[i][2]||'', content: v[i][3]||'' });
+  return ContentService.createTextOutput(
+    JSON.stringify(rows)).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        <div class="help-note">🔁 코드를 고친 뒤에는 <b>배포 → 배포 관리 → 연필(수정) → 버전 ‘새 버전’ → 배포</b>를 해야 반영됩니다. (주소는 그대로 유지)</div>
+      </div>
+
+      <!-- 문제 해결 -->
+      <div class="help-sec" style="--c:#0d6e8c;--bg:#e7f5fb">
+        <div class="help-sec-h">🛠️ 잘 안 될 때</div>
+        <div class="help-grid">
+          <div class="help-card"><b>저장(테스트)이 안 돼요</b><span>배포 권한이 ‘모든 사용자’인지, 주소가 <code>/exec</code>로 끝나는지 확인. 실행기록(시계 아이콘)에서 doPost 오류를 보세요.</span></div>
+          <div class="help-card"><b>불러오기가 안 돼요</b><span><b>doGet</b>을 추가했는지, ‘새 버전’으로 <b>다시 배포</b>했는지 확인. 주소를 브라우저에 넣어 <code>[</code>로 시작하는 데이터가 보이면 정상입니다.</span></div>
+          <div class="help-card"><b>오류율 100%</b><span>스크립트의 <code>시트ID</code>가 본인 시트로 정확히 바뀌었는지 확인하세요.</span></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="helpClose" style="background:#1f8a3b;box-shadow:0 6px 16px rgba(31,138,59,.3)">닫기</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const board=document.getElementById('board');
+const boardCanvas=document.getElementById('boardCanvas');
 const empty=document.getElementById('empty');
 const overlay=document.getElementById('overlay');
 const frame=document.getElementById('frame');
@@ -657,7 +1071,17 @@ function updateFrameEmpty(){
   frameEmpty.style.display=frameInner.querySelector('.card')?'none':'flex';
 }
 function updateBoardEmpty(){
-  empty.style.display=board.querySelector('.card')?'none':'flex';
+  empty.style.display=boardCanvas.querySelector('.card')?'none':'flex';
+}
+function updateCanvasHeight(){
+  // grow the canvas so the lowest card is always reachable by scrolling
+  let maxBottom=0;
+  boardCanvas.querySelectorAll('.card').forEach(c=>{
+    const b=(parseInt(c.style.top)||0)+c.offsetHeight;
+    if(b>maxBottom)maxBottom=b;
+  });
+  const min=board.clientHeight; // at least one screen tall
+  boardCanvas.style.minHeight=Math.max(min,maxBottom+120)+'px';
 }
 function moveCardToFrame(card,silent){
   const d=card._data||(card._data={});
@@ -680,7 +1104,7 @@ function moveCardToBoard(card){
   card.dataset.inframe='';
   const sb=card.querySelector('.star-btn');
   if(sb){sb.textContent='☆';sb.classList.remove('on');sb.title='중요 표시 / 액자에 보관';}
-  board.appendChild(card);
+  boardCanvas.appendChild(card);
   card.style.left=(d._bx!=null?d._bx:60)+'px';
   card.style.top=(d._by!=null?d._by:60)+'px';
   if(d._bw)card.style.width=d._bw+'px';
@@ -688,7 +1112,7 @@ function moveCardToBoard(card){
   const rot=card.classList.contains('schedule')?-2:card.classList.contains('memo')?1.5:card.classList.contains('file')?1:-1;
   card.style.transform=`rotate(${rot}deg)`;
   card.style.zIndex=++zTop;
-  updateFrameEmpty();updateBoardEmpty();
+  updateFrameEmpty();updateBoardEmpty();updateCanvasHeight();
   saveState();
 }
 
@@ -753,6 +1177,7 @@ function saveCard(){
   }
   if(!title&&!body){closeModal();return;}
   createCard(currentType,title,meta,body);
+  if(typeof autoSendCard==='function')autoSendCard(currentType,title,meta,body);
   closeModal();
 }
 
@@ -813,7 +1238,7 @@ function createCard(type,title,meta,body,file,opts){
     ${meta?`<div class="meta">⏱ ${esc(meta)}</div>`:''}
     <div class="resize"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M13 1 L1 13 M13 6 L6 13 M13 11 L11 13" stroke="rgba(0,0,0,.4)" stroke-width="1.4" fill="none"/></svg></div>
   `;
-  board.appendChild(card);
+  boardCanvas.appendChild(card);
 
   // persistent data object
   card._data={type,title,meta,body,file:file||null};
@@ -840,7 +1265,7 @@ function createCard(type,title,meta,body,file,opts){
   };
 
   if(type==='work'){
-    card._ws=opts.ws||{title:title||'작업공간',text:'',items:[]};
+    card._ws=opts.ws||{title:title||'작업공간',pages:[{text:'',items:[]}],cur:0};
     card.querySelector('.expand').onclick=e=>{e.stopPropagation();openWorkspace(card);};
   }
 
@@ -849,6 +1274,7 @@ function createCard(type,title,meta,body,file,opts){
   card._search=((c.label+' '+(title||'')+' '+(body||'')+' '+(meta||'')+' '+(file?file.name:''))).toLowerCase();
   if(typeof applySearch==='function')applySearch();
   if(opts.inframe){moveCardToFrame(card,true);}
+  updateCanvasHeight();
   if(!opts.silent)saveState();
   return card;
 }
@@ -866,13 +1292,18 @@ function buildCopyText(label,title,meta,body,file){
 }
 function workspaceCopyText(ws){
   const lines=['[작업공간] '+ (ws.title||'')];
-  if(ws.text&&ws.text.trim())lines.push('\n'+ws.text.trim());
-  if(ws.items&&ws.items.length){
-    lines.push('\n── 붙인 항목 ──');
-    ws.items.forEach(it=>{
-      lines.push('\n'+buildCopyText(CONF[it.type].label,it.title,it.meta,it.body,it.file));
-    });
-  }
+  // support both paged and legacy structure
+  const pages = ws.pages ? ws.pages : [{text:ws.text||'',items:ws.items||[]}];
+  pages.forEach((pg,i)=>{
+    if(pages.length>1)lines.push(`\n── 페이지 ${i+1} ──`);
+    if(pg.text&&pg.text.trim())lines.push((pages.length>1?'':'\n')+pg.text.trim());
+    if(pg.items&&pg.items.length){
+      lines.push('· 붙인 항목');
+      pg.items.forEach(it=>{
+        lines.push(buildCopyText(CONF[it.type].label,it.title,it.meta,it.body,it.file));
+      });
+    }
+  });
   return lines.join('\n').trim();
 }
 function copyToClipboard(text,btn){
@@ -915,8 +1346,8 @@ function makeDraggable(card){
     ox=card.offsetLeft;oy=card.offsetTop;
     const move=ev=>{
       let nx=ox+(ev.clientX-sx), ny=oy+(ev.clientY-sy);
-      nx=Math.max(0,Math.min(nx,board.clientWidth-card.offsetWidth));
-      ny=Math.max(0,Math.min(ny,board.clientHeight-card.offsetHeight));
+      nx=Math.max(0,Math.min(nx,boardCanvas.clientWidth-330-card.offsetWidth));
+      ny=Math.max(0,ny); // allow dragging downward without limit
       card.style.left=nx+'px';card.style.top=ny+'px';
       frame.classList.toggle('drop-hover',isOverFrame(ev));
     };
@@ -928,10 +1359,11 @@ function makeDraggable(card){
       if(isOverFrame(ev)){moveCardToFrame(card);}
       else{
         // keep card clear of the frame strip so it isn't hidden behind it
-        const maxX=board.clientWidth-330-card.offsetWidth;
+        const maxX=boardCanvas.clientWidth-330-card.offsetWidth;
         if((parseInt(card.style.left)||0)>maxX){card.style.left=Math.max(0,maxX)+'px';}
       }
       document.removeEventListener('mouseup',up);
+      updateCanvasHeight();
       saveState();
     };
     document.addEventListener('mousemove',move);
@@ -960,6 +1392,7 @@ function makeResizable(card){
       card.style.transform=rot;
       document.removeEventListener('mousemove',move);
       document.removeEventListener('mouseup',up);
+      updateCanvasHeight();
       saveState();
     };
     document.addEventListener('mousemove',move);
@@ -997,8 +1430,8 @@ let zTop=10;
     hH.style.transform=`rotate(${(h%12)*30+m*0.5}deg)`;
     const ap=h<12?'오전':'오후';
     const h12=((h%12)||12);
-    dig.textContent=`${ap} ${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-    dl.textContent=`${n.getMonth()+1}월 ${n.getDate()}일 (${days[n.getDay()]})`;
+    if(dig)dig.textContent=`${ap} ${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    if(dl)dl.textContent=`${n.getMonth()+1}월 ${n.getDate()}일 (${days[n.getDay()]})`;
   }
   tick();setInterval(tick,1000);
 })();
@@ -1024,10 +1457,10 @@ function arrangeCards(mode){
     }
     return (+a.dataset.order)-(+b.dataset.order);
   });
-  // grid layout, leaving room for the clock widget on the right
+  // grid layout, leaving room for the right-side frame/clock
   const padX=40, padY=28, gapX=24, gapY=26;
-  const clockReserve=185;
-  const avail=board.clientWidth-padX-clockReserve;
+  const frameReserve=340;
+  const avail=board.clientWidth-padX-frameReserve;
   let x=padX, y=padY, rowH=0;
   cards.forEach((card,i)=>{
     const w=card.offsetWidth, h=card.offsetHeight;
@@ -1041,7 +1474,7 @@ function arrangeCards(mode){
     rowH=Math.max(rowH,h);
     setTimeout(()=>{card.style.transition='box-shadow .2s ease';},520);
   });
-  setTimeout(saveState,560);
+  setTimeout(()=>{updateCanvasHeight();saveState();},560);
 }
 
 /* ---------- Fullscreen workspace ---------- */
@@ -1055,22 +1488,53 @@ let wsCount=0;
 document.getElementById('wsClose').onclick=closeWorkspace;
 wsOverlay.addEventListener('click',e=>{if(e.target===wsOverlay)closeWorkspace();});
 
+// ensure paged structure: ws = {title, pages:[{text,items}], cur}
+function wsEnsurePages(ws){
+  if(!ws.pages){
+    ws.pages=[{text:ws.text||'',items:ws.items||[]}];
+    delete ws.text;delete ws.items;
+  }
+  if(!ws.pages.length)ws.pages.push({text:'',items:[]});
+  if(typeof ws.cur!=='number'||ws.cur<0||ws.cur>=ws.pages.length)ws.cur=0;
+  return ws;
+}
+function wsCurPage(){return activeWork._ws.pages[activeWork._ws.cur];}
+
 function openWorkspace(card){
   activeWork=card;
-  const ws=card._ws;
-  wsTitle.value=ws.title;
-  wsText.value=ws.text;
-  // clear canvas (keep empty hint)
-  [...wsCanvas.querySelectorAll('.card')].forEach(n=>n.remove());
-  ws.items.forEach(it=>renderWsItem(it,false));
-  updateMiniEmpty();
+  wsEnsurePages(card._ws);
+  wsTitle.value=card._ws.title;
+  renderWsPage();
   wsOverlay.classList.add('show');
+}
+function renderWsPage(){
+  const pg=wsCurPage();
+  wsText.value=pg.text||'';
+  [...wsCanvas.querySelectorAll('.card')].forEach(n=>n.remove());
+  (pg.items||[]).forEach(it=>renderWsItem(it,false));
+  updateMiniEmpty();
+  updatePagerUI();
+}
+function updatePagerUI(){
+  const ws=activeWork._ws;
+  document.getElementById('wsPageInd').innerHTML=`페이지 <b>${ws.cur+1}</b> / ${ws.pages.length}`;
+  document.getElementById('wsPrev').disabled=(ws.cur===0);
+  document.getElementById('wsNext').disabled=(ws.cur===ws.pages.length-1);
+  document.getElementById('wsDelPage').disabled=(ws.pages.length<=1);
+}
+function wsGoTo(idx){
+  const ws=activeWork._ws;
+  if(idx<0||idx>=ws.pages.length)return;
+  // save current page text before switching
+  wsCurPage().text=wsText.value;
+  ws.cur=idx;
+  renderWsPage();
+  saveState();
 }
 function closeWorkspace(){
   if(activeWork){
     activeWork._ws.title=wsTitle.value.trim()||'작업공간';
-    activeWork._ws.text=wsText.value;
-    // reflect title on the board card
+    wsCurPage().text=wsText.value;
     const t=activeWork.querySelector('.title');
     if(t)t.textContent=activeWork._ws.title;
   }
@@ -1078,8 +1542,29 @@ function closeWorkspace(){
   activeWork=null;
   saveState();
 }
-wsText.addEventListener('input',()=>{if(activeWork){activeWork._ws.text=wsText.value;saveStateDebounced();}});
+wsText.addEventListener('input',()=>{if(activeWork){wsCurPage().text=wsText.value;saveStateDebounced();}});
 wsTitle.addEventListener('input',()=>{if(activeWork){activeWork._ws.title=wsTitle.value.trim()||'작업공간';saveStateDebounced();}});
+
+// pager buttons
+document.getElementById('wsPrev').onclick=()=>wsGoTo(activeWork._ws.cur-1);
+document.getElementById('wsNext').onclick=()=>wsGoTo(activeWork._ws.cur+1);
+document.getElementById('wsAddPage').onclick=()=>{
+  const ws=activeWork._ws;
+  wsCurPage().text=wsText.value;
+  ws.pages.push({text:'',items:[]});
+  ws.cur=ws.pages.length-1;
+  renderWsPage();
+  saveState();
+};
+document.getElementById('wsDelPage').onclick=()=>{
+  const ws=activeWork._ws;
+  if(ws.pages.length<=1)return;
+  if(!confirm(`현재 페이지(${ws.cur+1})를 삭제할까요? 이 페이지의 글과 항목이 모두 지워집니다.`))return;
+  ws.pages.splice(ws.cur,1);
+  if(ws.cur>=ws.pages.length)ws.cur=ws.pages.length-1;
+  renderWsPage();
+  saveState();
+};
 
 document.querySelectorAll('.ws-tools button').forEach(b=>{
   b.onclick=()=>addWsItem(b.dataset.wstype);
@@ -1087,16 +1572,17 @@ document.querySelectorAll('.ws-tools button').forEach(b=>{
 
 function addWsItem(type){
   const c=CONF[type];
+  const pg=wsCurPage();
   if(type==='file'){
     const inp=document.createElement('input');
     inp.type='file';
-    inp.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.hwp,.zip';
+    inp.accept='image/*,.html,.htm,.md,.markdown,.txt,.csv,.json,.js,.ts,.css,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.zip';
     inp.onchange=()=>{
       const f=inp.files[0];
       const finish=(fileObj)=>{
         const title=prompt('파일 카드 제목 (선택)', f?f.name:'')||(f?f.name:'파일');
         const it={type,title,meta:'',body:'',file:fileObj,x:60+wsCount*34,y:50+wsCount*30};
-        activeWork._ws.items.push(it);wsCount++;renderWsItem(it,true);updateMiniEmpty();saveState();
+        pg.items.push(it);wsCount++;renderWsItem(it,true);updateMiniEmpty();saveState();maybeSuggestNewPage();
       };
       if(f){const r=new FileReader();r.onload=()=>finish({name:f.name,size:f.size,type:f.type,data:r.result});r.readAsDataURL(f);}
       else finish(null);
@@ -1110,7 +1596,21 @@ function addWsItem(type){
   if(type==='schedule')meta=prompt('날짜 / 시간 (선택)','')||'';
   if(!title&&!body){return;}
   const it={type,title,meta,body,file:null,x:60+wsCount*34,y:50+wsCount*30};
-  activeWork._ws.items.push(it);wsCount++;renderWsItem(it,true);updateMiniEmpty();saveState();
+  pg.items.push(it);wsCount++;renderWsItem(it,true);updateMiniEmpty();saveState();maybeSuggestNewPage();
+}
+
+// when the current page gets crowded, offer a fresh page
+function maybeSuggestNewPage(){
+  const pg=wsCurPage();
+  if(pg.items.length>0 && pg.items.length%12===0){
+    if(confirm('이 페이지가 꽤 찼습니다. 새 페이지를 만들어 이어서 작업할까요?')){
+      const ws=activeWork._ws;
+      wsCurPage().text=wsText.value;
+      ws.pages.push({text:'',items:[]});
+      ws.cur=ws.pages.length-1;
+      renderWsPage();saveState();
+    }
+  }
 }
 
 function renderWsItem(it,animate){
@@ -1132,8 +1632,9 @@ function renderWsItem(it,animate){
   wsCanvas.appendChild(card);
   card.querySelector('.del-btn').onclick=e=>{
     e.stopPropagation();
-    const idx=activeWork._ws.items.indexOf(it);
-    if(idx>-1)activeWork._ws.items.splice(idx,1);
+    const items=wsCurPage().items;
+    const idx=items.indexOf(it);
+    if(idx>-1)items.splice(idx,1);
     card.remove();updateMiniEmpty();saveState();
   };
   card.querySelector('.copy-btn').onclick=e=>{
@@ -1233,10 +1734,14 @@ function openLightbox(src,name){
 }
 function closeLightbox(){lightbox.classList.remove('show');lbImg.src='';}
 
-function dataURLtoBlobURL(dataURL){
+function dataURLtoBlobURL(dataURL,name){
   try{
     const [head,b64]=dataURL.split(',');
-    const mime=(head.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';
+    let mime=(head.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';
+    // fix/force MIME by extension so the browser renders correctly
+    const ext=(name||'').split('.').pop().toLowerCase();
+    const map={html:'text/html',htm:'text/html',txt:'text/plain',md:'text/plain',markdown:'text/plain',log:'text/plain',js:'text/plain',ts:'text/plain',css:'text/plain',xml:'text/plain',yaml:'text/plain',yml:'text/plain',pdf:'application/pdf',svg:'image/svg+xml',json:'application/json',csv:'text/csv'};
+    if(map[ext])mime=map[ext];
     const bin=atob(b64);const len=bin.length;const arr=new Uint8Array(len);
     for(let i=0;i<len;i++)arr[i]=bin.charCodeAt(i);
     return URL.createObjectURL(new Blob([arr],{type:mime}));
@@ -1251,7 +1756,7 @@ document.addEventListener('click',e=>{
   const src=el.dataset.src, name=el.dataset.name, isImg=el.dataset.img==='1';
   if(isImg){openLightbox(src,name);return;}
   // non-image: open in a new tab via blob URL (works in sandbox), fallback to download
-  const blobUrl=dataURLtoBlobURL(src);
+  const blobUrl=dataURLtoBlobURL(src,name);
   const win=blobUrl?window.open(blobUrl,'_blank'):null;
   if(!win){
     const a=document.createElement('a');
@@ -1323,7 +1828,7 @@ function restoreState(){
     });
     if(c.inframe&&card._data){card._data._bx=c.x;card._data._by=c.y;card._data._bw=c.w;card._data._bh=c.h;}
   });
-  updateFrameEmpty();updateBoardEmpty();
+  updateFrameEmpty();updateBoardEmpty();updateCanvasHeight();
 }
 
 function clearAllData(){
@@ -1337,19 +1842,459 @@ function clearAllData(){
 }
 
 /* storage status indicator in the toolbar */
+// estimate total bytes used by all ChronoBoard keys in localStorage
+function storageUsage(){
+  const prefix='chronoboard.';
+  let bytes=0;
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.indexOf(prefix)===0){
+        const v=localStorage.getItem(k)||'';
+        // UTF-16 chars ≈ 2 bytes each (key + value)
+        bytes+=(k.length+v.length)*2;
+      }
+    }
+  }catch(e){}
+  return bytes;
+}
+function fmtBytes(b){
+  if(b<1024)return b+' B';
+  if(b<1024*1024)return (b/1024).toFixed(1)+' KB';
+  return (b/(1024*1024)).toFixed(2)+' MB';
+}
+const STORAGE_QUOTA=5*1024*1024; // typical localStorage limit ≈ 5MB
+
 function flagStorage(ok,state){
   const el=document.getElementById('storageStatus');
   if(!el)return;
-  const n=state&&state.cards?state.cards.length:0;
-  if(ok===true){el.textContent=`💾 저장됨 · ${n}개`;el.style.color='var(--sub)';}
-  else if(ok==='partial'){el.textContent='⚠ 일부 파일은 용량 초과로 저장 안 됨';el.style.color='#c2740a';}
-  else{el.textContent='⚠ 저장 실패 (저장공간 가득 참)';el.style.color='#c2410c';}
+  const n=state&&state.cards?state.cards.length:(boardCanvas?boardCanvas.querySelectorAll('.card').length:0);
+  const used=storageUsage();
+  const pct=Math.min(100,Math.round(used/STORAGE_QUOTA*100));
+  const cap=`💽 ${fmtBytes(used)} / ${fmtBytes(STORAGE_QUOTA)} (${pct}%)`;
+  // color the capacity by fill level
+  let capColor=pct>=90?'#c2410c':pct>=70?'#c2740a':'var(--sub)';
+  if(ok===true){
+    el.innerHTML=`<span style="color:var(--sub)">💾 저장됨 · ${n}개</span> &nbsp;·&nbsp; <span style="color:${capColor};font-weight:700">${cap}</span>`;
+  }else if(ok==='partial'){
+    el.innerHTML=`<span style="color:#c2740a">⚠ 일부 파일은 용량 초과로 저장 안 됨</span> &nbsp;·&nbsp; <span style="color:${capColor};font-weight:700">${cap}</span>`;
+  }else{
+    el.innerHTML=`<span style="color:#c2410c">⚠ 저장 실패 (저장공간 가득 참)</span> &nbsp;·&nbsp; <span style="font-weight:700">${cap}</span>`;
+  }
 }
 
 // restore on load
 restoreState();
+updateCanvasHeight();
+flagStorage(true,collectState());
+window.addEventListener('resize',updateCanvasHeight);
+
+/* =========================================================
+   Draggable clock & frame (positions persist)
+   ========================================================= */
+const UI_KEY='chronoboard.ui.v1';
+const clockWidget=document.getElementById('clockWidget');
+
+function loadUiPos(){
+  let p={};
+  try{p=JSON.parse(localStorage.getItem(UI_KEY))||{};}catch(e){}
+  if(p.clock){clockWidget.style.left=p.clock.left+'px';clockWidget.style.top=p.clock.top+'px';clockWidget.style.right='auto';}
+  if(p.frame){frame.style.left=p.frame.left+'px';frame.style.top=p.frame.top+'px';frame.style.right='auto';
+    if(p.frame.h)frame.style.height=p.frame.h+'px';}
+  if(p.clinic){clinic.style.left=p.clinic.left+'px';clinic.style.top=p.clinic.top+'px';}
+  if(p.clinicCollapsed)clinic.classList.add('collapsed');
+}
+function saveUiPos(){
+  const p={};
+  if(clockWidget.style.left&&clockWidget.style.right==='auto'){
+    p.clock={left:parseInt(clockWidget.style.left)||0,top:parseInt(clockWidget.style.top)||0};
+  }
+  if(frame.style.left&&frame.style.right==='auto'){
+    p.frame={left:parseInt(frame.style.left)||0,top:parseInt(frame.style.top)||0,h:parseInt(frame.style.height)||0};
+  }
+  if(clinic.style.left){
+    p.clinic={left:parseInt(clinic.style.left)||0,top:parseInt(clinic.style.top)||0};
+  }
+  p.clinicCollapsed=clinic.classList.contains('collapsed');
+  try{localStorage.setItem(UI_KEY,JSON.stringify(p));}catch(e){}
+  if(typeof flagStorage==='function')flagStorage(true);
+}
+
+function makeWidgetDraggable(el,opts){
+  opts=opts||{};
+  el.addEventListener('mousedown',e=>{
+    // ignore drags that start on interactive children
+    if(opts.ignore&&e.target.closest(opts.ignore))return;
+    const host=el.parentElement; // board-fixed (sticky layer)
+    const hostRect=host.getBoundingClientRect();
+    const elRect=el.getBoundingClientRect();
+    const startX=e.clientX,startY=e.clientY;
+    // current position relative to the sticky host
+    let curLeft=elRect.left-hostRect.left;
+    let curTop=elRect.top-hostRect.top;
+    el.classList.add('dragging');
+    el.style.right='auto';
+    el.style.left=curLeft+'px';
+    el.style.top=curTop+'px';
+    el.style.zIndex=999;
+    const move=ev=>{
+      let nl=curLeft+(ev.clientX-startX);
+      let nt=curTop+(ev.clientY-startY);
+      // keep within the board viewport
+      const maxL=host.clientWidth-el.offsetWidth;
+      const maxT=board.clientHeight-el.offsetHeight;
+      nl=Math.max(0,Math.min(nl,Math.max(0,maxL)));
+      nt=Math.max(0,Math.min(nt,Math.max(0,maxT)));
+      el.style.left=nl+'px';el.style.top=nt+'px';
+    };
+    const up=()=>{
+      el.classList.remove('dragging');
+      el.style.zIndex='';
+      document.removeEventListener('mousemove',move);
+      document.removeEventListener('mouseup',up);
+      saveUiPos();
+    };
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+    e.preventDefault();
+  });
+}
+
+// clock: drag anywhere on it
+makeWidgetDraggable(clockWidget);
+// frame: drag on the wooden border / title, but NOT on the inner pinned-cards area
+makeWidgetDraggable(frame,{ignore:'.frame-inner'});
+
+/* =========================================================
+   Mini clinic schedule board
+   ========================================================= */
+const clinic=document.getElementById('clinic');
+const clinicTitle=document.getElementById('clinicTitle');
+const clinicBody=document.getElementById('clinicBody');
+const clinicDateEl=document.getElementById('clinicDate');
+const CLINIC_KEY='chronoboard.clinic.v1';
+const CLINIC_CATS=[
+  {key:'sangdam', cls:'cat-sangdam', label:'상담', group:'today'},
+  {key:'surgery', cls:'cat-surgery', label:'수술', group:'today'},
+  {key:'dx',      cls:'cat-dx',      label:'Dx', group:'today'},
+  {key:'exercise',cls:'cat-exercise',label:'운동', group:'today'},
+  {key:'general', cls:'cat-general', label:'일반 진료', group:'today'},
+  {key:'etc',     cls:'cat-etc',     label:'기타', group:'today'},
+  {key:'tmr_sangdam', cls:'cat-tmr', label:'내일 상담예약', group:'tomorrow'},
+  {key:'tmr_surgery', cls:'cat-tmr', label:'내일 수술예약', group:'tomorrow'}
+];
+let clinicData={title:'오늘 병원 일정', rows:{}};
+
+function getEntries(catKey){
+  let e=clinicData.rows[catKey];
+  if(!e){
+    // create and STORE so edits persist into clinicData
+    e=[{time:'',content:''}];
+    clinicData.rows[catKey]=e;
+    return e;
+  }
+  // migrate old single-object format → array
+  if(!Array.isArray(e)){e=[{time:e.time||'',content:e.content||''}];clinicData.rows[catKey]=e;}
+  if(!e.length)e.push({time:'',content:''});
+  return e;
+}
+
+function buildClinicRows(){
+  clinicBody.innerHTML='';
+  let lastGroup=null;
+  CLINIC_CATS.forEach(cat=>{
+    if(cat.group!==lastGroup){
+      lastGroup=cat.group;
+      const sep=document.createElement('div');
+      sep.className='clinic-sep';
+      sep.textContent=(cat.group==='today')?'― 오늘 ―':'― 내일 예약 ―';
+      clinicBody.appendChild(sep);
+    }
+    const entries=getEntries(cat.key);
+    const isConsult=(cat.key==='sangdam'||cat.key==='tmr_sangdam');
+    const ph=isConsult?'내용 입력 (이름은 선택)':'내용 / 이름 입력';
+
+    const row=document.createElement('div');
+    row.className='clinic-row '+cat.cls;
+    const head=document.createElement('div');
+    head.className='cr-head';
+    head.innerHTML=`<span class="cr-badge">${esc(cat.label)}</span><button class="cr-add" title="줄 추가">+ 추가</button>`;
+    row.appendChild(head);
+
+    const linesWrap=document.createElement('div');
+    linesWrap.className='cr-lines';
+    row.appendChild(linesWrap);
+
+    function renderLines(){
+      linesWrap.innerHTML='';
+      entries.forEach((en,idx)=>{
+        const line=document.createElement('div');
+        line.className='cr-line';
+        line.innerHTML=`
+          <input class="cr-time" placeholder="시간" value="${esc(en.time||'')}">
+          <textarea class="cr-content" placeholder="${ph}">${esc(en.content||'')}</textarea>
+          <button class="cr-del" title="삭제">✕</button>
+        `;
+        const timeEl=line.querySelector('.cr-time');
+        const contEl=line.querySelector('.cr-content');
+        timeEl.addEventListener('input',()=>{en.time=timeEl.value;saveClinic();});
+        contEl.addEventListener('input',()=>{en.content=contEl.value;saveClinic();});
+        line.querySelector('.cr-del').onclick=()=>{
+          entries.splice(idx,1);
+          if(!entries.length)entries.push({time:'',content:''});
+          saveClinic();renderLines();
+        };
+        linesWrap.appendChild(line);
+      });
+    }
+    renderLines();
+    head.querySelector('.cr-add').onclick=()=>{
+      entries.push({time:'',content:''});saveClinic();renderLines();
+      const last=linesWrap.querySelector('.cr-line:last-child .cr-content');
+      if(last)last.focus();
+    };
+
+    clinicBody.appendChild(row);
+  });
+}
+
+function setClinicDate(){
+  const n=new Date();const days=['일','월','화','수','목','금','토'];
+  clinicDateEl.textContent=`${n.getMonth()+1}.${n.getDate()} (${days[n.getDay()]})`;
+}
+
+function loadClinic(){
+  try{const r=localStorage.getItem(CLINIC_KEY);if(r)clinicData=JSON.parse(r);}catch(e){}
+  if(!clinicData.rows)clinicData.rows={};
+  clinicTitle.value=clinicData.title||'오늘 병원 일정';
+  buildClinicRows();
+  setClinicDate();
+}
+function saveClinic(){
+  clinicData.title=clinicTitle.value;
+  try{localStorage.setItem(CLINIC_KEY,JSON.stringify(clinicData));}catch(e){}
+  if(typeof flagStorage==='function')flagStorage(true);
+}
+clinicTitle.addEventListener('input',saveClinic);
+
+function clinicLines(){
+  const parts=[];
+  CLINIC_CATS.forEach(cat=>{
+    const entries=clinicData.rows[cat.key];
+    if(!entries)return;
+    const arr=Array.isArray(entries)?entries:[entries];
+    arr.forEach(en=>{
+      const t=(en.time||'').trim(), c=(en.content||'').trim();
+      if(t||c)parts.push(`• ${cat.label}${t?' ['+t+']':''} : ${c}`);
+    });
+  });
+  return parts;
+}
+function clinicToText(){
+  return ['📋 '+(clinicTitle.value||'오늘 병원 일정')+' ('+clinicDateEl.textContent+')', ...clinicLines()].join('\n');
+}
+
+document.getElementById('clinicCopy').onclick=(e)=>{
+  copyToClipboard(clinicToText(),null);
+  const b=e.currentTarget;const o=b.textContent;b.textContent='✓ 복사됨';setTimeout(()=>b.textContent=o,1100);
+};
+document.getElementById('clinicPin').onclick=()=>{
+  const parts=clinicLines();
+  if(!parts.length){alert('입력된 일정이 없습니다.');return;}
+  createCard('schedule', clinicTitle.value||'오늘 병원 일정', clinicDateEl.textContent, parts.join('\n'));
+};
+document.getElementById('clinicReset').onclick=()=>{
+  if(!clinicLines().length){
+    // already empty → just refresh date
+    setClinicDate();return;
+  }
+  if(!confirm('미니 보드판의 모든 항목을 비울까요? (다음 날 일정을 새로 입력할 수 있습니다)'))return;
+  clinicData={title:'오늘 병원 일정', rows:{}};
+  clinicTitle.value=clinicData.title;
+  saveClinic();
+  buildClinicRows();
+  setClinicDate();
+};
+function updateClinicMinLabel(){
+  const collapsed=clinic.classList.contains('collapsed');
+  const mi=clinic.querySelector('.ch-min .mi');
+  const ml=clinic.querySelector('.ch-min .ml');
+  if(mi)mi.textContent=collapsed?'▸':'▾';
+  if(ml)ml.textContent=collapsed?'펼치기':'최소화';
+}
+document.getElementById('clinicMin').onclick=(e)=>{
+  e.stopPropagation();
+  clinic.classList.toggle('collapsed');
+  updateClinicMinLabel();
+  saveUiPos();
+};
+
+// clinic board is draggable (but not while editing inputs)
+makeWidgetDraggable(clinic,{ignore:'input,textarea,button'});
+
+loadClinic();
+
+loadUiPos();
+updateClinicMinLabel();
 document.getElementById('clearAllBtn').onclick=clearAllData;
 window.addEventListener('beforeunload',saveState);
+
+/* =========================================================
+   Google Sheet sync (via Google Form)
+   ========================================================= */
+const SHEET_KEY='chronoboard.sheet.v1';
+let sheetCfg={url:''};
+
+function loadSheetCfg(){
+  try{const r=localStorage.getItem(SHEET_KEY);if(r)sheetCfg=JSON.parse(r);}catch(e){}
+}
+function saveSheetCfg(){
+  try{localStorage.setItem(SHEET_KEY,JSON.stringify(sheetCfg));}catch(e){}
+}
+function sheetReady(){
+  return !!sheetCfg.url;
+}
+
+// send one record to the Apps Script web app (fire-and-forget; no-cors)
+function sendToSheet(kind, title, content){
+  if(!sheetReady())return false;
+  const payload=JSON.stringify({kind:kind||'', title:title||'', content:content||''});
+  // text/plain avoids a CORS preflight; Apps Script reads e.postData.contents
+  fetch(sheetCfg.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload})
+    .catch(()=>{});
+  return true;
+}
+
+// auto-send for 일정/메모 when created (called from saveCard path)
+function autoSendCard(type,title,meta,body){
+  if(!sheetReady())return;
+  if(type==='schedule'||type==='memo'){
+    const label=CONF[type].label;
+    const content=[meta?('['+meta+'] '):'',body||''].join('').trim();
+    sendToSheet(label,title,content);
+  }
+}
+
+/* ---- modal wiring ---- */
+const sheetOverlay=document.getElementById('sheetOverlay');
+const sheetWebappUrl=document.getElementById('sheetWebappUrl');
+const sheetStatusEl=document.getElementById('sheetStatus');
+
+function refreshSheetStatus(){
+  if(sheetReady())sheetStatusEl.innerHTML='<span style="color:#1f8a3b;font-weight:700">✓ 연동됨</span> — 일정·메모는 자동, 작업공간은 전송 버튼으로 보냅니다.';
+  else sheetStatusEl.innerHTML='<span style="color:#c2740a">아직 연동되지 않았습니다.</span> 웹앱 주소를 넣고 저장해 주세요.';
+}
+
+function openSheetModal(){
+  sheetWebappUrl.value=sheetCfg.url||'';
+  refreshSheetStatus();
+  sheetOverlay.classList.add('show');
+}
+const _wsSheetCfgBtn=document.getElementById('wsSheetCfg');
+if(_wsSheetCfgBtn)_wsSheetCfgBtn.onclick=openSheetModal;
+document.getElementById('sheetCancel').onclick=()=>sheetOverlay.classList.remove('show');
+sheetOverlay.addEventListener('click',e=>{if(e.target===sheetOverlay)sheetOverlay.classList.remove('show');});
+
+document.getElementById('sheetSave').onclick=()=>{
+  sheetCfg.url=sheetWebappUrl.value.trim();
+  saveSheetCfg();
+  refreshSheetStatus();
+  if(sheetReady())alert('연동이 저장되었습니다. 이제 일정·메모를 만들면 시트에 자동으로 쌓입니다.');
+};
+
+document.getElementById('sheetTest').onclick=()=>{
+  const url=sheetWebappUrl.value.trim();
+  if(!url){alert('웹앱 주소를 먼저 넣어주세요.');return;}
+  const payload=JSON.stringify({kind:'테스트', title:'ChronoBoard 연동 테스트', content:'이 줄이 시트에 보이면 성공입니다 ('+new Date().toLocaleString()+')'});
+  fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload}).catch(()=>{});
+  sheetStatusEl.innerHTML='✉️ 테스트를 보냈습니다. 잠시 후 구글 시트에 “테스트” 줄이 추가됐는지 확인해 보세요.';
+};
+
+// ---- import (read) rows from the sheet and turn them into cards ----
+async function importFromSheet(url, replace, statusEl){
+  const setStat=(html)=>{ if(statusEl)statusEl.innerHTML=html; };
+  if(!url){alert('먼저 “📊 시트 연동(⚙)”에서 웹앱 주소를 저장해 주세요.');return;}
+  setStat('불러오는 중…');
+  try{
+    const res=await fetch(url,{method:'GET'});
+    const rows=await res.json();
+    if(!Array.isArray(rows)){setStat('<span style="color:#c2410c">응답 형식 오류. 스크립트에 doGet이 추가됐는지 확인하세요.</span>');alert('불러오기 응답 형식이 올바르지 않습니다. 스크립트에 doGet을 추가하고 새 버전으로 배포했는지 확인해 주세요.');return;}
+    if(replace){[...boardCanvas.querySelectorAll('.card')].forEach(c=>c.remove());}
+    const typeByLabel={'일정':'schedule','메모':'memo','작업공간':'work','파일':'file','알림':'alarm','테스트':'memo'};
+    let added=0;
+    rows.forEach(r=>{
+      const label=(r.kind||'').trim();
+      const type=typeByLabel[label]||'memo';
+      const title=(r.title||'').trim();
+      const content=(r.content||'').trim();
+      const when=(r.time||'').toString().trim();
+      if(!title&&!content)return;
+      if(type==='schedule')createCard('schedule',title,when,content);
+      else if(type==='work')createCard('work',title,'',content);
+      else createCard('memo',title,'',content);
+      added++;
+    });
+    setStat(`<span style="color:#1f8a3b">✓ ${added}개를 보드로 불러왔습니다.</span>`);
+    return added;
+  }catch(e){
+    setStat('<span style="color:#c2410c">불러오기에 실패했습니다.</span> doGet 추가 후 “새 버전”으로 다시 배포했는지 확인해 주세요.');
+    alert('불러오기에 실패했습니다. 스크립트에 doGet을 추가하고 새 버전으로 다시 배포했는지 확인해 주세요.');
+  }
+}
+
+document.getElementById('sheetImport').onclick=()=>{
+  importFromSheet(sheetWebappUrl.value.trim(), document.getElementById('sheetImportReplace').checked, document.getElementById('sheetImportStatus'));
+};
+
+// toolbar quick import (uses saved URL) → opens choice modal
+const importChoiceOverlay=document.getElementById('importChoiceOverlay');
+document.getElementById('sheetImportTop').onclick=()=>{
+  if(!sheetCfg.url){
+    alert('먼저 작업공간의 ⚙ 버튼에서 웹앱 주소를 저장해 주세요.');
+    return;
+  }
+  importChoiceOverlay.classList.add('show');
+};
+document.getElementById('importChoiceCancel').onclick=()=>importChoiceOverlay.classList.remove('show');
+importChoiceOverlay.addEventListener('click',e=>{if(e.target===importChoiceOverlay)importChoiceOverlay.classList.remove('show');});
+document.querySelectorAll('.import-choice').forEach(btn=>{
+  btn.onclick=async()=>{
+    const replace=btn.dataset.replace==='true';
+    importChoiceOverlay.classList.remove('show');
+    const n=await importFromSheet(sheetCfg.url, replace, null);
+    if(typeof n==='number')alert(n+'개를 보드로 불러왔습니다.');
+  };
+});
+
+// workspace → send button
+document.getElementById('wsSendSheet').onclick=()=>{
+  if(!sheetReady()){
+    alert('먼저 옆의 ⚙ 버튼에서 구글 폼을 연결해 주세요.');
+    return;
+  }
+  if(!activeWork){return;}
+  const ws=activeWork._ws;
+  const title=ws.title||'작업공간';
+  const content=workspaceCopyText(ws);
+  sendToSheet('작업공간',title,content);
+  const b=document.getElementById('wsSendSheet');
+  const o=b.innerHTML;b.innerHTML='✓ 전송됨';setTimeout(()=>b.innerHTML=o,1400);
+};
+
+// help / user guide modal
+const helpOverlay=document.getElementById('helpOverlay');
+document.getElementById('helpBtn').onclick=()=>helpOverlay.classList.add('show');
+document.getElementById('helpClose').onclick=()=>helpOverlay.classList.remove('show');
+helpOverlay.addEventListener('click',e=>{if(e.target===helpOverlay)helpOverlay.classList.remove('show');});
+document.getElementById('helpCopyCode').onclick=(e)=>{
+  const code=document.getElementById('helpCodeBlock').textContent;
+  const btn=e.currentTarget;
+  copyToClipboard(code,null);
+  const o=btn.textContent;btn.textContent='✓ 복사됨';btn.classList.add('done');
+  setTimeout(()=>{btn.textContent=o;btn.classList.remove('done');},1400);
+};
+
+loadSheetCfg();
 
 /* =========================================================
    Alarms / Notifications
@@ -1364,6 +2309,7 @@ function loadAlarms(){
 }
 function saveAlarms(){
   try{localStorage.setItem(ALARM_KEY,JSON.stringify(alarms));}catch(e){}
+  if(typeof flagStorage==='function')flagStorage(true);
 }
 
 // --- UI element refs ---
